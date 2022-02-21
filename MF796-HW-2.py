@@ -29,11 +29,11 @@ class europeanOption():
         return f'initial level is {self.S}, strike is {self.K}, expiry is {self.T}, interest rate is {self.r}, volatility is {self.sigma}.'
     
     
-    def euroCall(self):
-        d1 = (np.log(self.S / self.K) + (self.r + 0.5 * self.sigma ** 2) * self.T) / (self.sigma * np.sqrt(self.T))
-        d2 = (np.log(self.S / self.K) + (self.r - 0.5 * self.sigma ** 2) * self.T) / (self.sigma * np.sqrt(self.T))
-        call = (self.S * si.norm.cdf(d1, 0.0, 1.0) - self.K * np.exp(-self.r * self.T) * si.norm.cdf(d2, 0.0, 1.0))
-        return call, d1, d2
+    def euroCall(self,S, K, T, r, sigma):
+        d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+        d2 = (np.log(S / K) + (r - 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+        call = (S * si.norm.cdf(d1, 0.0, 1.0) - K * np.exp(-r * T) * si.norm.cdf(d2, 0.0, 1.0))
+        return float(call)
 
 class FastFourierTransforms():
     
@@ -54,62 +54,107 @@ class FastFourierTransforms():
     
     def helper(self, n):
         
-        delta = np.zeros(len(n),dtype=complex)
+        delta = np.zeros(len(n),dtype = complex)
         delta[n==0] = 1
         return delta
     
     def CharaceristicHeston(self,u):
         
-        imaginary = complex(0,1)
-        Lambda = np.sqrt((self.sigma ** 2) * (u ** 2 + imaginary * u) + (self.kappa * imaginary * self.rho * self.sigma * u) ** 2)
-        omega = np.exp(imaginary * u * np.log(self.S) + imaginary * u * (self.r - self.q) * self.T + ((self.kappa * self.theta * self.T * (self.kappa - imaginary* self.rho * self.sigma * u)) / (self.sigma ** 2))) / (cmath.cosh(Lambda * self.T / 2) + (self.kappa - imaginary* self.rho * self.sigma * u) / (Lambda) * cmath.sinh(Lambda * self.T / 2)) ** (2 * self.kappa * self.theta / self.sigma ** 2)
-        #       np.exp(ii        * u * np.log(S0)     + ii        * u *(r-0)*T+kappa*theta*T*(kappa-ii*rho*sigma*u)/sigma**2)/(cmath.cosh(l*T/2)+(kappa-ii*rho*sigma*u)/l*cmath.sinh(l*T/2))**(2*kappa*theta/sigma**2)
-        phi = omega * np.exp(-(u ** 2 + imaginary * u) * self.nu / (Lambda / cmath.tanh(Lambda * self.T / 2) + self.kappa - imaginary * self.rho * self.sigma * u))
+        sigma = self.sigma
+        nu = self.nu
+        kappa = self.kappa
+        rho = self.rho
+        theta = self.theta
+        S = self.S
+        r = self.r
+        T = self.T
         
+        i = complex(0,1)
+        Lambda = cmath.sqrt(sigma**2*(u**2+i*u)+(kappa-i*rho*sigma*u)**2)
+        omega = np.exp(i*u*np.log(S)+i*u*(r - q)*T+kappa*theta*T*(kappa-i*rho*sigma*u)/sigma**2) / ((cmath.cosh(Lambda*T/2) + (kappa-i*rho*sigma*u) / Lambda*cmath.sinh(Lambda*T/2))**(2*kappa*theta/sigma**2))
+        phi = omega*np.exp(-(u**2+i*u)*nu/(Lambda/cmath.tanh(Lambda*T/2)+kappa-i*rho*sigma*u))
         return phi
     
-    def heston(self,alpha,N,M):
+    def heston(self,alpha,N,B,K):
         
         t = time.time()
-        imaginary = complex(0,1)
-        
-        n = N**2
-        tau = M / n
-        lambdaTau = 2 ** np.pi / n
-        Lambda = lambdaTau / tau
-        
-        x = np.arange(1,n+1,dtype=complex)
-        dx = (x-1) * tau
-        y = np.arange(1,n+1,dtype=complex)
-        chi = np.log(self.S) - Lambda * n /2
-        dy = chi + (y-1) * Lambda
-        CHIdx = np.zeros(len(x),dtype=complex)
-        
-        for i in range(0,n):
-            u = dx[i] - (alpha + 1) ** imaginary  # I think its (alpha + 1), but it might be (alpha - 1)
-            CHIdx [i] = self.CharaceristicHeston(u) / ((alpha + dx[i] * imaginary) * (alpha + 1 + dx[i] * imaginary))
-        
-        FFTinput = (tau / 2) * CHIdx * np.exp(-imaginary * chi * dx) * (2 - self.helper(x-1))
-        FFT = np.fft.fft(FFTinput)
-        
+        tau = B / (2**N)
+        Lambda = (2 * math.pi / (2**N)) / tau
+        dx = (np.arange(1,(2**N)+1,dtype = complex)-1) * tau
+        chi = np.log(self.S) - Lambda * (2**N) / 2
+        dy = chi + (np.arange(1,(2**N)+1,dtype = complex)-1) * Lambda
+        i = complex(0,1)
+        chiDx = np.zeros(len(np.arange(1,(2**N)+1,dtype = complex)),dtype = complex)
+        for ff in range(0,(2**N)):
+            u = dx[ff] - (alpha + 1) * i
+            chiDx[ff] = self.CharaceristicHeston(u) / ((alpha + dx[ff] * i) * (alpha + 1 + dx[ff] * i))
+        FFT = (tau/2) * chiDx * np.exp(-i * chi * dx) * (2 - self.helper(np.arange(1,(2**N)+1,dtype = complex)-1))
+        ff = np.fft.fft(FFT)
         mu = np.exp(-alpha * np.array(dy)) / np.pi
-        FFTtwo = mu * np.array(FFT).real 
-        List = list(chi + (np.cumsum(np.ones((n,1))) - 1) * Lambda)
+        ffTwo = mu * np.array(ff).real
+        List = list(chi + (np.cumsum(np.ones(((2**N), 1))) - 1) * Lambda)
         Kt = np.exp(np.array(List))
-        
-        Kfft = []
-        ito = []
-        for i in range(len(Kt)):
-            if (Kt[i] != float('inf')) & (Kt[i] != float('-inf')) & ( Kt[i]>1e-16 ) & (Kt[i] < 1e16) & ( FFTtwo[i] != float("inf")) & (FFTtwo[i] != float("-inf")) & (FFTtwo[i] is not  float("nan")):
-           #if( Kt[i]>1e-16 )&(Kt[i] < 1e16)& ( Kt[i] != float("inf"))&( Kt[i] != float("-inf")) &( zz2[i] != float("inf"))&(zz2[i] != float("-inf")) & (zz2[i] is not  float("nan")):
-                Kfft += [Kt[i]]
-                ito += [FFTtwo[i]]
-        curve = interpolate.splrep(Kfft, np.real(ito))
-        value = np.exp(-self.r * self.T) * interpolate.splev(self.K, curve).real
+        Kfft = [] 
+        ffT = []
+        for gg in range(len(Kt)):
+            if( Kt[gg]>1e-16 )&(Kt[gg] < 1e16)& ( Kt[gg] != float("inf"))&( Kt[gg] != float("-inf")) &( ffTwo[gg] != float("inf"))&(ffTwo[gg] != float("-inf")) & (ffTwo[gg] is not  float("nan")):
+                Kfft += [Kt[gg]]
+                ffT += [ffTwo[gg]]
+        spline = interpolate.splrep(Kfft , np.real(ffT))
+        value =  np.exp(-self.r*self.T)*interpolate.splev(K, spline).real
+
         tt = time.time()
-        compTime = tt - t
+        compTime = tt-t
+
+        return(value,compTime)
+    
+    def alpha(self,lst,N,B,K):
         
-        return value, compTime
+        alphas = np.array([self.heston(alpha, N, B, K)[0] for alpha in lst])
+        plt.plot(lst, alphas)
+        return plt.show()
+    
+    def strikeCalibration(self, size, strikesLst,K):
+        x = np.zeros((len(size),len(strikesLst)))
+        y = np.zeros((len(size),len(strikesLst)))
+        a, b = np.meshgrid(size, strikesLst)
+        
+        for gg in range(len(size)):
+            for pp in range(len(strikesLst)):
+                Heston = self.heston(1, size[gg], strikesLst[pp],K)
+                x[gg][pp] = Heston[0]
+                y[gg][pp] = 1 / ((Heston[0]) ** 2 * Heston[1])
+        
+        return x, y, a, b
+    
+class VolatilitySurfaces():
+    
+    def __init__(self, stockLst, strikeLst, expiryLst,S, K, T, r, sigma):
+        self.stockLst = stockLst
+        self.strikeLst = strikeLst
+        self.expiryLst = expiryLst
+        self.S = S
+        self.K = K
+        self.T = T
+        self.r = r
+        self.sigma = sigma
+        
+    def strikeVolatility(self):
+        volatility = []
+        euC = europeanOption(self.S, self.K, self.T, self.r, self.sigma)
+        for gg in range(len(self.strikeLst)):
+            volPoint = root(lambda x: ((euC.euroCall(self.S, self.strikeLst[gg], self.T, self.r, x))) - self.stockLst[gg],0.3)
+            volatility += [volPoint.x]
+        return volatility, self.strikeLst
+
+    def expiryVolatility(self):
+        volatility = []
+        euC = europeanOption(self.S, self.K, self.T, self.r, self.sigma)
+        for gg in range(len(self.expiryLst)):
+            volPoint = root(lambda x: ((euC.euroCall(S, K, self.expiryLst[gg], r, x))) - self.stockLst[gg],0.3)
+            volatility += [volPoint.x]
+        return volatility, self.expiryLst
+
 
 
 if __name__ == '__main__':      # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
@@ -121,26 +166,65 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     q = 0
     sigma = 0.2
     alpha = 1
-    N = 9
-    M = 250
+    N = 10
+    B = 250
     nu = 0.08
     kappa = 0.7
     rho = -0.4
     theta = 0.1
     
-    
     # analytic sanity check
     analyticEuros = europeanOption(S, K, T, r, sigma)
-    value, d1, d2 = analyticEuros.euroCall()
-    print(f'the call value is:  {value}\n')
+    value = analyticEuros.euroCall(S, K, T, r, sigma)
     print(f'{repr(analyticEuros)}\n')
+    print(f'the call value is:  {value}\n')
     
-    
+    # A i)
     Heston = FastFourierTransforms(S, K, T, r, q, sigma,nu,kappa,rho,theta)
-    fft = Heston.heston(alpha, N, M)
-    print(f'The FFT price is: {fft[0]}')
+    fft = Heston.heston(alpha, N, B, K)
+    print(f'The FFT equivalent price is: {fft[0]}\n')
+    print(f'Runtime is:  {fft[1]}\n')
     
     
+    alphas = np.linspace(0.1,10,num = 50)
+    alphaPlot = Heston.alpha(alphas,N,B,K)
+    
+    alphass = [0.01, 0.02, 0.25, 0.5, 0.8, 1 ,1.05, 1.5, 1.75,10,30,40]
+    plot = []
+    for i in alphass:
+        plot += [Heston.heston(i,N,B,K)[0]]
+    plt.plot(plot)
+    
+    
+    
+    
+    
+    
+    size = np.array([7,8,9,10,11,12,13,14])
+    strikesLst = np.linspace(150,300,100)
+    strikesPlot = Heston.strikeCalibration(size, strikesLst,K)
+    
+    fig1 = plt.figure()
+    ax = Axes3D(fig1)
+    ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap='rainbow')
+    plt.show()
+    
+    
+    expiryLst = 0
+    
+    strikeLst = np.linspace(70,230,60)
+    stockLst = []
+    for i in strikeLst:
+        stockLst += [Heston.heston(alpha, N, B, i)[0]]
+    stockLst = np.array(stockLst)
+    
+    volSurface = VolatilitySurfaces(stockLst, strikeLst, expiryLst, S, K, T, r, sigma)
+    
+    strikeVol, lst = volSurface.strikeVolatility()
+    
+    strikeVol = np.array(strikeVol)
+    plt.plot(lst, strikeVol)
+    plt.show()
     
     
     
