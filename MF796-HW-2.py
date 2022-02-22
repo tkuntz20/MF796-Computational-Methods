@@ -15,6 +15,7 @@ import time
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import root
 from scipy import interpolate
+import plotly.graph_objects as go
 
 class europeanOption():
     
@@ -197,22 +198,23 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     strikesPlot = Heston.strikeCalibration(sizeN, strikesLst,K)
     fig1 = plt.figure()
     ax = Axes3D(fig1)
-    ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap=cm.gist_earth)
+    ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap=cm.coolwarm)
     plt.title("Call Option Price for N & B ranges, K=250")
     ax.set_xlabel("N for 2^N")
     ax.set_ylabel("strikes = B")
     ax.set_zlabel("Call Option Prices")
+    ax.view_init(10, 80)
     plt.show()
     
     fig2 = plt.figure()
     ax1 = Axes3D(fig2)
-    ax1.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[1].T, rstride=1, cstride=1, cmap=cm.gist_earth)
+    ax1.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[1].T, rstride=1, cstride=1, cmap=cm.coolwarm)
     plt.title("Efficiency of N & B ranges, K=250")
     ax1.set_xlabel("N for 2^N")
     ax1.set_ylabel("strikes = B")
     ax1.set_zlabel("efficiency")
+    ax1.view_init(10, 80)
     plt.show()
-    
     
     
     print(f'k=260    {Heston.heston(alpha,N,B,260)}\n')
@@ -229,6 +231,8 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     ax2.set_xlabel("N for 2^N")
     ax2.set_ylabel("strikes = B")
     ax2.set_zlabel("Call Option Prices")
+    ax2.view_init(10, 83)
+    plt.grid(linestyle = '--', linewidth = 1)
     plt.show()
     
     fig4 = plt.figure()
@@ -238,6 +242,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     ax3.set_xlabel("N for 2^N")
     ax3.set_ylabel("strikes = B")
     ax3.set_zlabel("efficiency")
+    ax3.view_init(10, 83)
     plt.show()
     
     # B i)
@@ -249,7 +254,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     sigma = 0.4
     alpha = 1
     N = 10
-    B = 150
+    B = 1000
     nu = 0.09
     kappa = 0.5
     rho = 0.25
@@ -275,7 +280,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     plt.show()
     
     # B ii)
-    expiryLst = np.linspace(1/12,4,71)
+    expiryLst = np.linspace(1/12,3,71)
     strikeLst = 0
     value = []
     for i in expiryLst:
@@ -304,7 +309,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     sigma = 0.4
     alpha = 1
     N = 10
-    B = 150
+    B = 1000
     nu = [0.005,0.01,0.05,0.075,0.09,0.25]
     kappa = 0.5
     rho = 0.25
@@ -332,7 +337,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         plt.show()
         
         # B ii)
-        expiryLst = np.linspace(1/12,4,71)
+        expiryLst = np.linspace(1/12,3,71)
         strikeLst = 0
         value = []
         for i in expiryLst:
@@ -360,7 +365,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     sigma = 0.4
     alpha = 1
     N = 10
-    B = 150
+    B = 1000
     nu = 0.09
     kappa = [0.05,0.1,0.25,0.5,1,1.5]
     rho = 0.25
@@ -387,7 +392,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         plt.show()
         
         # B ii)
-        expiryLst = np.linspace(1/12,4,71)
+        expiryLst = np.linspace(1/12,3,71)
         strikeLst = 0
         value = []
         for i in expiryLst:
@@ -415,7 +420,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     sigma = 0.4
     alpha = 1
     N = 10
-    B = 150
+    B = 1000
     nu = 0.09
     kappa = 0.5
     rho = [0.05,0.25,0.5,0.75,1]
@@ -442,7 +447,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         plt.show()
         
         # B ii)
-        expiryLst = np.linspace(1/12,4,71)
+        expiryLst = np.linspace(1/12,3,71)
         strikeLst = 0
         value = []
         for i in expiryLst:
@@ -470,7 +475,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     sigma = 0.4
     alpha = 1
     N = 10
-    B = 150
+    B = 1000
     nu = 0.09
     kappa = 0.5
     rho = 0.25
@@ -497,7 +502,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         plt.show()
         
         # B ii)
-        expiryLst = np.linspace(1/12,4,71)
+        expiryLst = np.linspace(1/12,3,71)
         strikeLst = 0
         value = []
         for i in expiryLst:
