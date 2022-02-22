@@ -10,6 +10,7 @@ import numpy as np
 import cmath
 import scipy.stats as si
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import time
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.stats import norm
@@ -149,9 +150,9 @@ class VolatilitySurfaces():
 
     def expiryVolatility(self):
         volatility = []
-        euC = europeanOption(self.S, self.K, self.T, self.r, self.sigma)
+        euCC = europeanOption(self.S, self.K, self.T, self.r, self.sigma)
         for gg in range(len(self.expiryLst)):
-            volPoint = root(lambda x: ((euC.euroCall(S, K, self.expiryLst[gg], r, x))) - self.stockLst[gg],0.3)
+            volPoint = root(lambda x: ((euCC.euroCall(S, K, self.expiryLst[gg], r, x))) - self.stockLst[gg],0.3)
             volatility += [volPoint.x]
         return volatility, self.expiryLst
 
@@ -185,35 +186,67 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     print(f'The FFT equivalent price is: {fft[0]}\n')
     print(f'Runtime is:  {fft[1]}\n')
     
+    alphass = [0.01, 0.02, 0.25, 0.5, 0.75, 0.9, 1 ,1.25, 1.5, 1.75, 2, 5, 7, 10, 15, 20, 30, 38]
+    plot = []
+    for i in alphass:
+        plot += [Heston.heston(i,N,B,K)[0]]
+    plt.plot(plot,marker='*')
+    plt.title("Alpha Values")
+    plt.xlabel("Alphas")
+    plt.ylabel("FFT Heston Call Price")
+    plt.grid(linestyle = '--', linewidth = 1)
+    default_x_ticks = range(len(alphass))
+    plt.xticks(default_x_ticks, alphass)
+    plt.show()
     
-    # alphas = np.linspace(0.1,10,num = 50)
-    # alphaPlot = Heston.alpha(alphas,N,B,K)
     
-    # alphass = [0.01, 0.02, 0.25, 0.5, 0.75, 0.9, 1 ,1.25, 1.5, 1.75, 2, 5, 7, 10, 15, 20, 30, 38]
-    # plot = []
-    # for i in alphass:
-    #     plot += [Heston.heston(i,N,B,K)[0]]
-    # print(plot)
-    # plt.plot(plot)
-    
-    
-    # # A ii)
-    # sizeN = np.array([6,7,8,9,10,11,12,13,14,15])
+    # A ii)
+    # sizeN = np.array([6,7,8,9,10,11,12,13,14])
     # strikesLst = np.linspace(150,350,100)
     # strikesPlot = Heston.strikeCalibration(sizeN, strikesLst,K)
     # fig1 = plt.figure()
     # ax = Axes3D(fig1)
-    # ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap='rainbow')
+    # ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap=cm.gist_earth)
+    # plt.title("Call Option Price for N & B ranges, K=250")
+    # ax.set_xlabel("N for 2^N")
+    # ax.set_ylabel("strikes = B")
+    # ax.set_zlabel("Call Option Prices")
     # plt.show()
+    
+    # fig2 = plt.figure()
+    # ax1 = Axes3D(fig2)
+    # ax1.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[1].T, rstride=1, cstride=1, cmap=cm.gist_earth)
+    # plt.title("Efficiency of N & B ranges, K=250")
+    # ax1.set_xlabel("N for 2^N")
+    # ax1.set_ylabel("strikes = B")
+    # ax1.set_zlabel("efficiency")
+    # plt.show()
+    
+    
     
     # print(f'k=260    {Heston.heston(alpha,N,B,260)}\n')
     
-    # sizeN = np.array([6,7,8,9,10,11,12,13,14,15])
+    # sizeN = np.array([6,7,8,9,10,11,12,13,14])
     # strikesLst = np.linspace(150,350,100)
-    # strikesPlot = Heston.strikeCalibration(sizeN, strikesLst,260)
-    # fig1 = plt.figure()
-    # ax = Axes3D(fig1)
-    # ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap='rainbow')
+    # Heston260 = FastFourierTransforms(S, K, T, r, q, sigma,nu,kappa,rho,theta)
+    # strikesPlot260 = Heston260.strikeCalibration(sizeN, strikesLst,260)
+    
+    # fig3 = plt.figure()
+    # ax2 = Axes3D(fig3)
+    # ax2.plot_surface(strikesPlot260[2], strikesPlot260[3], strikesPlot260[0].T, rstride=1, cstride=1, cmap=cm.coolwarm)
+    # plt.title("Call Option Price for N & B ranges, K=260")
+    # ax2.set_xlabel("N for 2^N")
+    # ax2.set_ylabel("strikes = B")
+    # ax2.set_zlabel("Call Option Prices")
+    # plt.show()
+    
+    # fig4 = plt.figure()
+    # ax3 = Axes3D(fig4)
+    # ax3.plot_surface(strikesPlot260[2], strikesPlot260[3], strikesPlot260[1].T, rstride=1, cstride=1, cmap=cm.coolwarm)
+    # plt.title("Efficiency of N & B ranges, K=260")
+    # ax3.set_xlabel("N for 2^N")
+    # ax3.set_ylabel("strikes = B")
+    # ax3.set_zlabel("efficiency")
     # plt.show()
     
     # B i)
@@ -231,36 +264,263 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     rho = 0.25
     theta = 0.12
     
-    expiryLst = np.linspace(1/12,3,72)
-    
-    strikeLst = np.linspace(50,250,72)
+    bHeston = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, rho, theta)
+    expiryLst = 0
+    strikeLst = np.linspace(50,250,71)
     stockLst = []
     for i in strikeLst:
-        stockLst += [Heston.heston(alpha, N, B, i)[0]]
+        stockLst += [bHeston.heston(alpha, N, B, i)[0]]
     stockLst = np.array(stockLst)
     
-    volSurface = VolatilitySurfaces(stockLst, strikeLst, expiryLst, S, K, T, r, sigma)
-    
-    strikeVol, lst = volSurface.strikeVolatility()
+    volSurfaceK = VolatilitySurfaces(stockLst, strikeLst, expiryLst, S, K, T, r, sigma)
+    strikeVol, lst = volSurfaceK.strikeVolatility()
     
     strikeVol = np.array(strikeVol)
-    plt.plot(lst, strikeVol)
+    plt.plot(lst, strikeVol,color='y')
+    plt.title("I.V. of Strike")
+    plt.xlabel("Strike")
+    plt.ylabel("Implied Volatility")
+    plt.grid(linestyle = '--', linewidth = 1)
     plt.show()
     
     # B ii)
-    expiryLst = np.linspace(1/12,3,72)
+    expiryLst = np.linspace(1/12,4,71)
+    strikeLst = 0
     value = []
     for i in expiryLst:
-        model = FastFourierTransforms(S, K, i, r, q, sigma,nu,kappa,rho,theta)
-        value += [model.heston(alpha, N, B, K)[0]]
+        model1 = FastFourierTransforms(S, K, i, r, q, sigma,nu,kappa,rho,theta)
+        value += [model1.heston(alpha, N, B, K)[0]]
     value = np.array(value)
     
-    expiryVol, lst1 = volSurface.expiryVolatility()
+    volSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
+    expiryVol, lst1 = volSurfaceT.expiryVolatility()
     expiryVol = np.array(expiryVol)
-    plt.plot(lst1, expiryVol)
+    plt.plot(lst1, expiryVol,color='r')
+    plt.title("I.V. Term Structure")
+    plt.xlabel("Time to Expiry")
+    plt.ylabel("Implied Volatility")
+    plt.grid(linestyle = '--', linewidth = 1)
     plt.show()
+    
+    # # B iii)
+    # # nu changes
+    
+    S = 150
+    K = 150
+    T = 0.25
+    r = 0.025
+    q = 0
+    sigma = 0.4
+    alpha = 1
+    N = 10
+    B = 150
+    nu = [0.005,0.01,0.05,0.075,0.09,0.25]
+    kappa = 0.5
+    rho = 0.25
+    theta = 0.12
+    
+    
+    for nU in nu:
+        nuHeston = FastFourierTransforms(S, K, T, r, q, sigma, nU, kappa, rho, theta)
+        expiryLst = 0
+        strikeLst = np.linspace(50,250,71)
+        stockLst = []
+        for i in strikeLst:
+            stockLst += [nuHeston.heston(alpha, N, B, i)[0]]
+        stockLst = np.array(stockLst)
         
+        nuVolSurfaceK = VolatilitySurfaces(stockLst, strikeLst, expiryLst, S, K, T, r, sigma)
+        strikeVol, lst = nuVolSurfaceK.strikeVolatility()
+        
+        strikeVol = np.array(strikeVol)
+        plt.plot(lst, strikeVol,color='y')
+        plt.title(f"I.V. of Strike, nu={nU}")
+        plt.xlabel("Strike")
+        plt.ylabel("Implied Volatility")
+        plt.grid(linestyle = '--', linewidth = 1)
+        plt.show()
+        
+        # B ii)
+        expiryLst = np.linspace(1/12,4,71)
+        strikeLst = 0
+        value = []
+        for i in expiryLst:
+            modelnu = FastFourierTransforms(S, K, i, r, q, sigma,nU,kappa,rho,theta)
+            value += [modelnu.heston(alpha, N, B, K)[0]]
+        value = np.array(value)
+        
+        nuVolSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
+        expiryVol, lst1 = nuVolSurfaceT.expiryVolatility()
+        expiryVol = np.array(expiryVol)
+        plt.plot(lst1, expiryVol,color='r')
+        plt.title(f"I.V. Term Structure, nu={nU}")
+        plt.xlabel("Time to Expiry")
+        plt.ylabel("Implied Volatility")
+        plt.grid(linestyle = '--', linewidth = 1)
+        plt.show()
     
+    # kappa changes
     
+    S = 150
+    K = 150
+    T = 0.25
+    r = 0.025
+    q = 0
+    sigma = 0.4
+    alpha = 1
+    N = 10
+    B = 150
+    nu = 0.09
+    kappa = [0.05,0.1,0.25,0.5,1,1.5]
+    rho = 0.25
+    theta = 0.12
     
+    for KAPPA in kappa:
+        kappaHeston = FastFourierTransforms(S, K, T, r, q, sigma, nu, KAPPA, rho, theta)
+        expiryLst = 0
+        strikeLst = np.linspace(50,250,71)
+        stockLst = []
+        for i in strikeLst:
+            stockLst += [kappaHeston.heston(alpha, N, B, i)[0]]
+        stockLst = np.array(stockLst)
+        
+        kappaVolSurfaceK = VolatilitySurfaces(stockLst, strikeLst, expiryLst, S, K, T, r, sigma)
+        strikeVol, lst = kappaVolSurfaceK.strikeVolatility()
+        
+        strikeVol = np.array(strikeVol)
+        plt.plot(lst, strikeVol,color='y')
+        plt.title(f"I.V. of Strike, kappa={KAPPA}")
+        plt.xlabel("Strike")
+        plt.ylabel("Implied Volatility")
+        plt.grid(linestyle = '--', linewidth = 1)
+        plt.show()
+        
+        # B ii)
+        expiryLst = np.linspace(1/12,4,71)
+        strikeLst = 0
+        value = []
+        for i in expiryLst:
+            modelkappa = FastFourierTransforms(S, K, i, r, q, sigma,nu,KAPPA,rho,theta)
+            value += [modelkappa.heston(alpha, N, B, K)[0]]
+        value = np.array(value)
+        
+        kappaVolSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
+        expiryVol, lst1 = kappaVolSurfaceT.expiryVolatility()
+        expiryVol = np.array(expiryVol)
+        plt.plot(lst1, expiryVol,color='r')
+        plt.title(f"I.V. Term Structure, kappa={KAPPA}")
+        plt.xlabel("Time to Expiry")
+        plt.ylabel("Implied Volatility")
+        plt.grid(linestyle = '--', linewidth = 1)
+        plt.show()
+    
+    # rho changes
+    
+    S = 150
+    K = 150
+    T = 0.25
+    r = 0.025
+    q = 0
+    sigma = 0.4
+    alpha = 1
+    N = 10
+    B = 150
+    nu = 0.09
+    kappa = 0.5
+    rho = [0.05,0.25,0.5,0.75,1]
+    theta = 0.12
+    
+    for RHO in rho:
+        rhoHeston = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, RHO, theta)
+        expiryLst = 0
+        strikeLst = np.linspace(50,250,71)
+        stockLst = []
+        for i in strikeLst:
+            stockLst += [rhoHeston.heston(alpha, N, B, i)[0]]
+        stockLst = np.array(stockLst)
+        
+        rhoVolSurfaceK = VolatilitySurfaces(stockLst, strikeLst, expiryLst, S, K, T, r, sigma)
+        strikeVol, lst = rhoVolSurfaceK.strikeVolatility()
+        
+        strikeVol = np.array(strikeVol)
+        plt.plot(lst, strikeVol,color='y')
+        plt.title(f"I.V. of Strike, rho={RHO}")
+        plt.xlabel("Strike")
+        plt.ylabel("Implied Volatility")
+        plt.grid(linestyle = '--', linewidth = 1)
+        plt.show()
+        
+        # B ii)
+        expiryLst = np.linspace(1/12,4,71)
+        strikeLst = 0
+        value = []
+        for i in expiryLst:
+            modelrho = FastFourierTransforms(S, K, i, r, q, sigma,nu,kappa,RHO,theta)
+            value += [modelrho.heston(alpha, N, B, K)[0]]
+        value = np.array(value)
+        
+        rhoVolSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
+        expiryVol, lst1 = rhoVolSurfaceT.expiryVolatility()
+        expiryVol = np.array(expiryVol)
+        plt.plot(lst1, expiryVol,color='r')
+        plt.title(f"I.V. Term Structure, rho={RHO}")
+        plt.xlabel("Time to Expiry")
+        plt.ylabel("Implied Volatility")
+        plt.grid(linestyle = '--', linewidth = 1)
+        plt.show()
+    
+    # theta changes
+    
+    S = 150
+    K = 150
+    T = 0.25
+    r = 0.025
+    q = 0
+    sigma = 0.4
+    alpha = 1
+    N = 10
+    B = 150
+    nu = 0.09
+    kappa = 0.5
+    rho = 0.25
+    theta = [0.01,0.05,0.12,0.2,0.3]
+    
+    for THETA in theta:
+        thetaHeston = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, rho, THETA)
+        expiryLst = 0
+        strikeLst = np.linspace(50,250,71)
+        stockLst = []
+        for i in strikeLst:
+            stockLst += [thetaHeston.heston(alpha, N, B, i)[0]]
+        stockLst = np.array(stockLst)
+        
+        thetaVolSurfaceK = VolatilitySurfaces(stockLst, strikeLst, expiryLst, S, K, T, r, sigma)
+        strikeVol, lst = thetaVolSurfaceK.strikeVolatility()
+        
+        strikeVol = np.array(strikeVol)
+        plt.plot(lst, strikeVol,color='y')
+        plt.title(f"I.V. of Strike, theta={THETA}")
+        plt.xlabel("Strike")
+        plt.ylabel("Implied Volatility")
+        plt.grid(linestyle = '--', linewidth = 1)
+        plt.show()
+        
+        # B ii)
+        expiryLst = np.linspace(1/12,4,71)
+        strikeLst = 0
+        value = []
+        for i in expiryLst:
+            modeltheta = FastFourierTransforms(S, K, i, r, q, sigma,nu,kappa,rho,THETA)
+            value += [modeltheta.heston(alpha, N, B, K)[0]]
+        value = np.array(value)
+        
+        thetaVolSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
+        expiryVol, lst1 = thetaVolSurfaceT.expiryVolatility()
+        expiryVol = np.array(expiryVol)
+        plt.plot(lst1, expiryVol,color='r')
+        plt.title(f"I.V. Term Structure, theta={THETA}")
+        plt.xlabel("Time to Expiry")
+        plt.ylabel("Implied Volatility")
+        plt.grid(linestyle = '--', linewidth = 1)
+        plt.show()
     
