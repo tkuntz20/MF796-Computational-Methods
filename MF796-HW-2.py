@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import time
 from mpl_toolkits.mplot3d import Axes3D
-from scipy.stats import norm
 from scipy.optimize import root
 from scipy import interpolate
 
@@ -50,8 +49,6 @@ class FastFourierTransforms():
         self.rho = rho
         self.theta = theta
         
-    def __repr__(self):
-        return 
     
     def helper(self, n):
         
@@ -108,12 +105,6 @@ class FastFourierTransforms():
         compTime = tt-t
 
         return(value,compTime)
-    
-    def alpha(self,lst,N,B,K):
-        
-        alphas = np.array([self.heston(alpha, N, B, K)[0] for alpha in lst])
-        plt.plot(lst, alphas)
-        return plt.show()
     
     def strikeCalibration(self, size, strikesLst,K):
         x = np.zeros((len(size),len(strikesLst)))
@@ -201,53 +192,53 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     
     
     # A ii)
-    # sizeN = np.array([6,7,8,9,10,11,12,13,14])
-    # strikesLst = np.linspace(150,350,100)
-    # strikesPlot = Heston.strikeCalibration(sizeN, strikesLst,K)
-    # fig1 = plt.figure()
-    # ax = Axes3D(fig1)
-    # ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap=cm.gist_earth)
-    # plt.title("Call Option Price for N & B ranges, K=250")
-    # ax.set_xlabel("N for 2^N")
-    # ax.set_ylabel("strikes = B")
-    # ax.set_zlabel("Call Option Prices")
-    # plt.show()
+    sizeN = np.array([6,7,8,9,10,11,12,13,14])
+    strikesLst = np.linspace(150,350,100)
+    strikesPlot = Heston.strikeCalibration(sizeN, strikesLst,K)
+    fig1 = plt.figure()
+    ax = Axes3D(fig1)
+    ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap=cm.gist_earth)
+    plt.title("Call Option Price for N & B ranges, K=250")
+    ax.set_xlabel("N for 2^N")
+    ax.set_ylabel("strikes = B")
+    ax.set_zlabel("Call Option Prices")
+    plt.show()
     
-    # fig2 = plt.figure()
-    # ax1 = Axes3D(fig2)
-    # ax1.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[1].T, rstride=1, cstride=1, cmap=cm.gist_earth)
-    # plt.title("Efficiency of N & B ranges, K=250")
-    # ax1.set_xlabel("N for 2^N")
-    # ax1.set_ylabel("strikes = B")
-    # ax1.set_zlabel("efficiency")
-    # plt.show()
+    fig2 = plt.figure()
+    ax1 = Axes3D(fig2)
+    ax1.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[1].T, rstride=1, cstride=1, cmap=cm.gist_earth)
+    plt.title("Efficiency of N & B ranges, K=250")
+    ax1.set_xlabel("N for 2^N")
+    ax1.set_ylabel("strikes = B")
+    ax1.set_zlabel("efficiency")
+    plt.show()
     
     
     
-    # print(f'k=260    {Heston.heston(alpha,N,B,260)}\n')
+    print(f'k=260    {Heston.heston(alpha,N,B,260)}\n')
     
-    # sizeN = np.array([6,7,8,9,10,11,12,13,14])
-    # strikesLst = np.linspace(150,350,100)
-    # Heston260 = FastFourierTransforms(S, K, T, r, q, sigma,nu,kappa,rho,theta)
-    # strikesPlot260 = Heston260.strikeCalibration(sizeN, strikesLst,260)
+    sizeN = np.array([6,7,8,9,10,11,12,13,14])
+    strikesLst = np.linspace(150,350,100)
+    Heston260 = FastFourierTransforms(S, K, T, r, q, sigma,nu,kappa,rho,theta)
+    strikesPlot260 = Heston260.strikeCalibration(sizeN, strikesLst,260)
     
-    # fig3 = plt.figure()
-    # ax2 = Axes3D(fig3)
-    # ax2.plot_surface(strikesPlot260[2], strikesPlot260[3], strikesPlot260[0].T, rstride=1, cstride=1, cmap=cm.coolwarm)
-    # plt.title("Call Option Price for N & B ranges, K=260")
-    # ax2.set_xlabel("N for 2^N")
-    # ax2.set_ylabel("strikes = B")
-    # ax2.set_zlabel("Call Option Prices")
-    # plt.show()
+    fig3 = plt.figure()
+    ax2 = Axes3D(fig3)
+    ax2.plot_surface(strikesPlot260[2], strikesPlot260[3], strikesPlot260[0].T, rstride=1, cstride=1, cmap=cm.coolwarm)
+    plt.title("Call Option Price for N & B ranges, K=260")
+    ax2.set_xlabel("N for 2^N")
+    ax2.set_ylabel("strikes = B")
+    ax2.set_zlabel("Call Option Prices")
+    plt.show()
     
-    # fig4 = plt.figure()
-    # ax3 = Axes3D(fig4)
-    # ax3.plot_surface(strikesPlot260[2], strikesPlot260[3], strikesPlot260[1].T, rstride=1, cstride=1, cmap=cm.coolwarm)
-    # plt.title("Efficiency of N & B ranges, K=260")
-    # ax3.set_xlabel("N for 2^N")
-    # ax3.set_ylabel("strikes = B")
-    # ax3.set_zlabel("efficiency")
-    # plt.show()
+    fig4 = plt.figure()
+    ax3 = Axes3D(fig4)
+    ax3.plot_surface(strikesPlot260[2], strikesPlot260[3], strikesPlot260[1].T, rstride=1, cstride=1, cmap=cm.coolwarm)
+    plt.title("Efficiency of N & B ranges, K=260")
+    ax3.set_xlabel("N for 2^N")
+    ax3.set_ylabel("strikes = B")
+    ax3.set_zlabel("efficiency")
+    plt.show()
     
     # B i)
     S = 150
