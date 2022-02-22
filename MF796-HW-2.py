@@ -186,33 +186,54 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     print(f'Runtime is:  {fft[1]}\n')
     
     
-    alphas = np.linspace(0.1,10,num = 50)
-    alphaPlot = Heston.alpha(alphas,N,B,K)
+    # alphas = np.linspace(0.1,10,num = 50)
+    # alphaPlot = Heston.alpha(alphas,N,B,K)
     
-    alphass = [0.01, 0.02, 0.25, 0.5, 0.8, 1 ,1.05, 1.5, 1.75,10,30,40]
-    plot = []
-    for i in alphass:
-        plot += [Heston.heston(i,N,B,K)[0]]
-    plt.plot(plot)
-    
-    
-    
+    # alphass = [0.01, 0.02, 0.25, 0.5, 0.75, 0.9, 1 ,1.25, 1.5, 1.75, 2, 5, 7, 10, 15, 20, 30, 38]
+    # plot = []
+    # for i in alphass:
+    #     plot += [Heston.heston(i,N,B,K)[0]]
+    # print(plot)
+    # plt.plot(plot)
     
     
+    # # A ii)
+    # sizeN = np.array([6,7,8,9,10,11,12,13,14,15])
+    # strikesLst = np.linspace(150,350,100)
+    # strikesPlot = Heston.strikeCalibration(sizeN, strikesLst,K)
+    # fig1 = plt.figure()
+    # ax = Axes3D(fig1)
+    # ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap='rainbow')
+    # plt.show()
     
-    size = np.array([7,8,9,10,11,12,13,14])
-    strikesLst = np.linspace(150,300,100)
-    strikesPlot = Heston.strikeCalibration(size, strikesLst,K)
+    # print(f'k=260    {Heston.heston(alpha,N,B,260)}\n')
     
-    fig1 = plt.figure()
-    ax = Axes3D(fig1)
-    ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap='rainbow')
-    plt.show()
+    # sizeN = np.array([6,7,8,9,10,11,12,13,14,15])
+    # strikesLst = np.linspace(150,350,100)
+    # strikesPlot = Heston.strikeCalibration(sizeN, strikesLst,260)
+    # fig1 = plt.figure()
+    # ax = Axes3D(fig1)
+    # ax.plot_surface(strikesPlot[2], strikesPlot[3], strikesPlot[0].T, rstride=1, cstride=1, cmap='rainbow')
+    # plt.show()
     
+    # B i)
+    S = 150
+    K = 150
+    T = 0.25
+    r = 0.025
+    q = 0
+    sigma = 0.4
+    alpha = 1
+    N = 10
+    B = 150
+    nu = 0.09
+    kappa = 0.5
+    rho = 0.25
+    theta = 0.12
     
-    expiryLst = 0
+    expiryLst = np.linspace(1/12,3,72)
     
-    strikeLst = np.linspace(70,230,60)
+    strikeLst = np.linspace(50,250,72)
     stockLst = []
     for i in strikeLst:
         stockLst += [Heston.heston(alpha, N, B, i)[0]]
@@ -226,6 +247,19 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     plt.plot(lst, strikeVol)
     plt.show()
     
+    # B ii)
+    expiryLst = np.linspace(1/12,3,72)
+    value = []
+    for i in expiryLst:
+        model = FastFourierTransforms(S, K, i, r, q, sigma,nu,kappa,rho,theta)
+        value += [model.heston(alpha, N, B, K)[0]]
+    value = np.array(value)
+    
+    expiryVol, lst1 = volSurface.expiryVolatility()
+    expiryVol = np.array(expiryVol)
+    plt.plot(lst1, expiryVol)
+    plt.show()
+        
     
     
     
