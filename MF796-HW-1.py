@@ -7,22 +7,10 @@ Created on Mon Feb  7 13:32:55 2022
 
 # Thomas Kuntz MF796 hw-1
 
-import pandas as pd
-import pandas_datareader
-import numpy as np
-from math import *
-import QuantLib as ql
-import scipy as sp
-import scipy.stats as si
-import statsmodels.api as sm
-import seaborn as sns
-import sympy as sy
-from tabulate import tabulate
-from pandas_datareader import data
 import matplotlib.pyplot as plt
-from sympy.stats import Normal, cdf
-import urllib.request
-import zipfile
+import numpy as np
+import scipy.stats as si
+
 
 # Analytic call price
 def euroCall(S, K, T, r, sigma):

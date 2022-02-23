@@ -15,7 +15,6 @@ import time
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import root
 from scipy import interpolate
-import plotly.graph_objects as go
 
 class europeanOption():
     
