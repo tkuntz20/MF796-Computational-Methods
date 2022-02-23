@@ -253,7 +253,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     q = 0
     sigma = 0.4
     alpha = 1
-    N = 10
+    N = 9
     B = 1000
     nu = 0.09
     kappa = 0.5
@@ -308,7 +308,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     q = 0
     sigma = 0.4
     alpha = 1
-    N = 10
+    N = 9
     B = 1000
     nu = [0.005,0.01,0.05,0.075,0.09,0.25]
     kappa = 0.5
@@ -329,13 +329,16 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         strikeVol, lst = nuVolSurfaceK.strikeVolatility()
         
         strikeVol = np.array(strikeVol)
-        plt.plot(lst, strikeVol,color='y')
-        plt.title(f"I.V. of Strike, nu={nU}")
+        plt.plot(lst, strikeVol,label=f'nu={nU}')
+        plt.title(f"I.V. of Strike, nu")
         plt.xlabel("Strike")
         plt.ylabel("Implied Volatility")
-        plt.grid(linestyle = '--', linewidth = 1)
-        plt.show()
-        
+    plt.grid(linestyle = '--', linewidth = 1)
+    plt.legend()
+    plt.show()
+    
+    for nU in nu:
+        nuHeston = FastFourierTransforms(S, K, T, r, q, sigma, nU, kappa, rho, theta)    
         # B ii)
         expiryLst = np.linspace(1/12,3,71)
         strikeLst = 0
@@ -348,12 +351,13 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         nuVolSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
         expiryVol, lst1 = nuVolSurfaceT.expiryVolatility()
         expiryVol = np.array(expiryVol)
-        plt.plot(lst1, expiryVol,color='r')
-        plt.title(f"I.V. Term Structure, nu={nU}")
+        plt.plot(lst1, expiryVol,label=f'nu={nU}')
+        plt.title(f"I.V. Term Structure, nu")
         plt.xlabel("Time to Expiry")
         plt.ylabel("Implied Volatility")
-        plt.grid(linestyle = '--', linewidth = 1)
-        plt.show()
+    plt.grid(linestyle = '--', linewidth = 1)
+    plt.legend()
+    plt.show()
     
     # kappa changes
     
@@ -364,7 +368,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     q = 0
     sigma = 0.4
     alpha = 1
-    N = 10
+    N = 9
     B = 1000
     nu = 0.09
     kappa = [0.05,0.1,0.25,0.5,1,1.5]
@@ -384,14 +388,17 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         strikeVol, lst = kappaVolSurfaceK.strikeVolatility()
         
         strikeVol = np.array(strikeVol)
-        plt.plot(lst, strikeVol,color='y')
-        plt.title(f"I.V. of Strike, kappa={KAPPA}")
+        plt.plot(lst, strikeVol,label=f'kappa={KAPPA}')
+        plt.title(f"I.V. of Strike, kappa")
         plt.xlabel("Strike")
         plt.ylabel("Implied Volatility")
-        plt.grid(linestyle = '--', linewidth = 1)
-        plt.show()
+    plt.grid(linestyle = '--', linewidth = 1)
+    plt.legend()
+    plt.show()
         
         # B ii)
+    for KAPPA in kappa:
+        kappaHeston = FastFourierTransforms(S, K, T, r, q, sigma, nu, KAPPA, rho, theta)
         expiryLst = np.linspace(1/12,3,71)
         strikeLst = 0
         value = []
@@ -403,12 +410,13 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         kappaVolSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
         expiryVol, lst1 = kappaVolSurfaceT.expiryVolatility()
         expiryVol = np.array(expiryVol)
-        plt.plot(lst1, expiryVol,color='r')
-        plt.title(f"I.V. Term Structure, kappa={KAPPA}")
+        plt.plot(lst1, expiryVol,label=f'kappa={KAPPA}')
+        plt.title(f"I.V. Term Structure, kappa")
         plt.xlabel("Time to Expiry")
         plt.ylabel("Implied Volatility")
-        plt.grid(linestyle = '--', linewidth = 1)
-        plt.show()
+    plt.grid(linestyle = '--', linewidth = 1)
+    plt.legend()
+    plt.show()
     
     # rho changes
     
@@ -419,7 +427,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     q = 0
     sigma = 0.4
     alpha = 1
-    N = 10
+    N = 9
     B = 1000
     nu = 0.09
     kappa = 0.5
@@ -439,14 +447,17 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         strikeVol, lst = rhoVolSurfaceK.strikeVolatility()
         
         strikeVol = np.array(strikeVol)
-        plt.plot(lst, strikeVol,color='y')
-        plt.title(f"I.V. of Strike, rho={RHO}")
+        plt.plot(lst, strikeVol,label=f'rho={RHO}')
+        plt.title(f"I.V. of Strike, rho")
         plt.xlabel("Strike")
         plt.ylabel("Implied Volatility")
-        plt.grid(linestyle = '--', linewidth = 1)
-        plt.show()
+    plt.grid(linestyle = '--', linewidth = 1)
+    plt.legend()
+    plt.show()
         
         # B ii)
+    for RHO in rho:
+        rhoHeston = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, RHO, theta)
         expiryLst = np.linspace(1/12,3,71)
         strikeLst = 0
         value = []
@@ -458,12 +469,13 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         rhoVolSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
         expiryVol, lst1 = rhoVolSurfaceT.expiryVolatility()
         expiryVol = np.array(expiryVol)
-        plt.plot(lst1, expiryVol,color='r')
-        plt.title(f"I.V. Term Structure, rho={RHO}")
+        plt.plot(lst1, expiryVol,label=f'rho={RHO}')
+        plt.title(f"I.V. Term Structure, rho")
         plt.xlabel("Time to Expiry")
         plt.ylabel("Implied Volatility")
-        plt.grid(linestyle = '--', linewidth = 1)
-        plt.show()
+    plt.grid(linestyle = '--', linewidth = 1)
+    plt.legend()
+    plt.show()
     
     # theta changes
     
@@ -474,12 +486,13 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     q = 0
     sigma = 0.4
     alpha = 1
-    N = 10
+    N = 9
     B = 1000
     nu = 0.09
     kappa = 0.5
     rho = 0.25
     theta = [0.01,0.05,0.12,0.2,0.3]
+    
     
     for THETA in theta:
         thetaHeston = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, rho, THETA)
@@ -494,14 +507,17 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         strikeVol, lst = thetaVolSurfaceK.strikeVolatility()
         
         strikeVol = np.array(strikeVol)
-        plt.plot(lst, strikeVol,color='y')
-        plt.title(f"I.V. of Strike, theta={THETA}")
+        plt.plot(lst, strikeVol,label=f'theta={THETA}')
+        plt.title(f"I.V. of Strike, theta")
         plt.xlabel("Strike")
         plt.ylabel("Implied Volatility")
-        plt.grid(linestyle = '--', linewidth = 1)
-        plt.show()
+    plt.grid(linestyle = '--', linewidth = 1)
+    plt.legend()
+    plt.show()
         
         # B ii)
+    for THETA in theta:
+        thetaHeston = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, rho, THETA)
         expiryLst = np.linspace(1/12,3,71)
         strikeLst = 0
         value = []
@@ -513,10 +529,11 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
         thetaVolSurfaceT = VolatilitySurfaces(value, strikeLst, expiryLst, S, K, T, r, sigma)
         expiryVol, lst1 = thetaVolSurfaceT.expiryVolatility()
         expiryVol = np.array(expiryVol)
-        plt.plot(lst1, expiryVol,color='r')
-        plt.title(f"I.V. Term Structure, theta={THETA}")
+        plt.plot(lst1, expiryVol,label=f'theta={THETA}')
+        plt.title(f"I.V. Term Structure, theta")
         plt.xlabel("Time to Expiry")
         plt.ylabel("Implied Volatility")
-        plt.grid(linestyle = '--', linewidth = 1)
-        plt.show()
+    plt.grid(linestyle = '--', linewidth = 1)
+    plt.legend()
+    plt.show()
     
