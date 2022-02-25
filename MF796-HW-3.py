@@ -179,22 +179,26 @@ class breedenLitzenberger(base):
         else:
             return root(lambda x: norm.ppf(delta+1)-(np.log(self.S/x)+(self.r+0.5*sigma**2)*expiry) / (sigma * np.sqrt(expiry)), self.S).x
 
-    def densities(self,coefficients,K,T):
+    def densities(self,sigma1,sigma2,K,T):
 
         density = []
         h = 0.01
         for i in range(len(K)):
-            put = base.euroPut(self.S,K[i],T,self.r,coefficients[0]*K[i] + coefficients[1])
-            positive = base.euroPut(self.S,K[i]+h,T,self.r,coefficients[0]*(K[i]+h) + coefficients[1])
-            negative = base.euroPut(self.S,K[i]-h,T,self.r,coefficients[0]*(K[i]-h) + coefficients[1])
+            put = base.euroPut(self.S,K[i],T,self.r,sigma1[0]*K[i] + sigma1[1])
+            positive = base.euroPut(self.S,K[i]+h,T,self.r,sigma1[0]*(K[i]+h) + sigma1[1])
+            negative = base.euroPut(self.S,K[i]-h,T,self.r,sigma1[0]*(K[i]-h) + sigma1[1])
             density += [np.exp(self.r * T) * (negative - 2*put + positive) / h**2]
         den2 = []
         for i in range(len(K)):
-            put1 = base.euroPut(self.S,K[i],T,self.r,self.sigma)
-            positive1 = base.euroPut(self.S,K[i]+h,T,self.r,self.sigma)
-            negative1 = base.euroPut(self.S,K[i]-h,T,self.r,self.sigma)
+            put1 = base.euroPut(self.S,K[i],T,self.r,sigma2)
+            positive1 = base.euroPut(self.S,K[i]+h,T,self.r,sigma2)
+            negative1 = base.euroPut(self.S,K[i]-h,T,self.r,sigma2)
             den2 += [np.exp(self.r * T) * (negative1 - 2*put1 + positive1) / h**2]
         return density, den2
+
+
+
+
 
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
