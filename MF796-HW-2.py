@@ -104,7 +104,7 @@ class FastFourierTransforms():
         tt = time.time()
         compTime = tt-t
 
-        return(value,compTime)
+        return value, compTime
     
     def strikeCalibration(self, size, strikesLst,K):
         x = np.zeros((len(size),len(strikesLst)))
