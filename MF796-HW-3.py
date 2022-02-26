@@ -242,12 +242,30 @@ class hestonCalibration(FastFourierTransforms):
         callDF =df[['expDays', 'expT', 'K', 'mid_price_put', 'put_ask', 'put_bid']]
         return df, putDF, callDF
 
-    def arbitrage(self):
+    def arbitrage(self,df,type):
+        mid = df.columns[df.columns.str.contains('mid')][0]
+        if type == 'C':
+            monotonic = any(df[mid].pct_change().dropna() >= 0)
+        else:
+            monotonic = any(df[mid].pct_change().dropna() <= 0)
+
+        df['delta'] = (df[mid] - df[mid].shift(1)) / (df.K - df.K.shift(1))
+        if type == 'C':
+            dc = any(df.delta >= 0) or any(df.delta < -1)
+        else:
+            dc = any(df.delta > 1) or any(df.delta <= 0)
+
+        df['convex'] = df[mid] - 2 * df[mid].shift(1) + df[mid].shift(2)
+        convexity = any(df.convex < 0)
+
+        # arb checks
+        return pd.Series([monotonic, dc, convexity], index=['Monotonic','Delat','convexity'])
+
 
         return
 
     def calibrateToHeston(self):
-
+        
         return
 
 
