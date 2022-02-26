@@ -214,17 +214,43 @@ class breedenLitzenberger(base):
             pdf.append(p)
         return pdf, K
 
-    def deltaPayoff(self,S,K,type):
+    def digitalPayoff(self,S,K,type):
         if type == 'P':
-            return 0 if S>K else 1
+            return 1 if S>=K else 0
         else:
-            return 0 if S<K else 1
+            return 1 if S<=K else 0
 
-    def deltaPrice(self,density,S,K,type):
+    def digitalPrice(self,density,S,K,type):
         value = 0
         for i in range(0, len(S)-2):
             value += density[i] * self.deltaPayoff(S[i],K,type) * 0.1
         return value
+
+class hestonCalibration(FastFourierTransforms):
+
+    def __init__(self,excel):
+        self.excel = excel
+
+    def __repr__(self):
+        return
+
+    def data(self):
+        df = pd.read_excel(self.excel)
+        df['mid_price_call'] = (df.call_bid + df.call_ask) / 2
+        df['mid_price_put'] = (df.put_bid + df.put_ask) / 2
+        putDF = df[['expDays', 'expT', 'K','mid_price_call', 'call_ask', 'call_bid']]
+        callDF =df[['expDays', 'expT', 'K', 'mid_price_put', 'put_ask', 'put_bid']]
+        return df, putDF, callDF
+
+    def arbitrage(self):
+
+        return
+
+    def calibrateToHeston(self):
+
+        return
+
+
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -321,8 +347,8 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
 
     # part (e)
     S = np.linspace(65,112,len(pdf1))
-    p1 = BL.deltaPrice(pdf1, S, 110,'P')
-    p2 = BL.deltaPrice(pdf2, S,105,'C')
+    p1 = BL.digitalPrice(pdf1, S, 110,'P')
+    p2 = BL.digitalPrice(pdf2, S,105,'C')
     v = (threeMvol+oneMvol)/2
     eupdf = BL.riskNeutral(100,strikeList,2/12,r,v,0.1)
     p3 = BL.euroPayoff(eupdf,S,100)
@@ -330,6 +356,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     print(f'1M European Digital Put Option with Strike 110:  {p1}')
     print(f'3M European Digital Call Option with Strike 105:  {p2}')
     print(f'2M European Call Option with Strike 100:  {p3}\n')
+
 
     # problem 2
     S = 100
