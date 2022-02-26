@@ -11,6 +11,7 @@ import scipy.stats as si
 from scipy.stats import kurtosis, skew, mode, norm
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import re
 import time
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import root, minimize
@@ -164,42 +165,66 @@ class FastFourierTransforms():
 
 class breedenLitzenberger(base):
 
-    def __init__(self,table,S, K, T, r, sigma):
-        self.table = table
+    def __init__(self,S, K, T, r, sigma):
         self.S = S
         self.K = K
         self.T = T
         self.r = r
         self.sigma = sigma
 
-    def extractStrikes(self,sigma,expiry,delta):
+    def euroPayoff(self, density, S, K):
+        payoff = 0
+        for i in range(0, len(S)-2):
+            payoff += density[i] * self.deltaPayoff(S[i], K)
+        return payoff
 
-        if delta >= 0:
+    def strikeTransform(self,type, sigma, expiry, delta):
+        transform = si.norm.ppf(delta)
+        if type == 'P':
+            K = 100 * np.exp(0.5 * sigma ** 2 * expiry + sigma * np.sqrt(expiry) * transform)
+        else:
+            K = 100 * np.exp(0.5 * sigma ** 2 * expiry - sigma * np.sqrt(expiry) * transform)
+        return K
+
+    def extractStrikes(self, type, sigma,expiry,delta):
+
+        if type == 'P':
             return root(lambda x: norm.ppf(delta)-(np.log(self.S/x)+(self.r+0.5*sigma**2)*expiry) / (sigma * np.sqrt(expiry)), self.S).x
         else:
             return root(lambda x: norm.ppf(delta+1)-(np.log(self.S/x)+(self.r+0.5*sigma**2)*expiry) / (sigma * np.sqrt(expiry)), self.S).x
 
-    def densities(self,sigma1,sigma2,K,T):
+    def gammaTransform(self,S,K,T,r,sigma,h):
+        value = base.euroCall(self,S, K, T, r, sigma)
+        valuePlus = base.euroCall(self,S,K+h,T,r,sigma)
+        valueDown = base.euroCall(self,S, K-h, T, r, sigma)
+        return (valueDown - 2 * value + valuePlus) / h**2
 
-        density = []
-        h = 0.01
-        for i in range(len(K)):
-            put = base.euroPut(self.S,K[i],T,self.r,sigma1[0]*K[i] + sigma1[1])
-            positive = base.euroPut(self.S,K[i]+h,T,self.r,sigma1[0]*(K[i]+h) + sigma1[1])
-            negative = base.euroPut(self.S,K[i]-h,T,self.r,sigma1[0]*(K[i]-h) + sigma1[1])
-            density += [np.exp(self.r * T) * (negative - 2*put + positive) / h**2]
-        den2 = []
-        for i in range(len(K)):
-            put1 = base.euroPut(self.S,K[i],T,self.r,sigma2)
-            positive1 = base.euroPut(self.S,K[i]+h,T,self.r,sigma2)
-            negative1 = base.euroPut(self.S,K[i]-h,T,self.r,sigma2)
-            den2 += [np.exp(self.r * T) * (negative1 - 2*put1 + positive1) / h**2]
-        return density, den2
+    def riskNeutral(self,S,K,T,r,sigma,h):
+        pdf = []
+        for jj, vol in enumerate(sigma):
+            p = np.exp(r*T) * self.gammaTransform(S, K[jj], T, r, vol,h)
+            pdf.append(p)
+        return pdf, K
 
+    def constantVolatiltiy(self,S,T,r,sigma,h):
+        K = np.linspace(70, 130, 150)
+        pdf = []
+        for k in K:
+            p = np.exp(r*T) * self.gammaTransform(S, k, T, r, sigma,h)
+            pdf.append(p)
+        return pdf, K
 
+    def deltaPayoff(self,S,K,type):
+        if type == 'P':
+            return 0 if S>K else 1
+        else:
+            return 0 if S<K else 1
 
-
-
+    def deltaPrice(self,density,S,K,type):
+        value = 0
+        for i in range(0, len(S)-2):
+            value += density[i] * self.deltaPayoff(S[i],K,type) * 0.1
+        return value
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -230,14 +255,83 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     print('------------------tests above------------------\n')
 
     # Volatility table-------------------------------------------------
-    volTable = pd.DataFrame({'delta':[10, 25, 40, 50, 40, 25, 10], 'strike':['DP','DP','DP','D','DC','DC','DC'], '1M':[32.25,24.73,20.21,18.24,15.74,13.70,11.48], '3M':[28.36,21.78,18.18,16.45,14.62,12.56,10.94]})
-    print(f'{volTable.head(7)}\n')
+    expiryStrike = ['10DP','25DP','40DP','50DP','40DC','25DC','10DC']
+    vols = [[32.25,28.36],[24.73,21.78],[20.21,18.18],[18.24,16.45],[15.74,14.62],[13.70,12.56],[11.48,10.94]]
+    volDictionary = dict(zip(expiryStrike, vols))
+    volDF = pd.DataFrame.from_dict(volDictionary,orient='index',columns=['1M','3M'])
+    #print(volDictionary)
+    S = 100
+    K = 0
+    T = 0
+    r = 0.0
+    sigma = 0
+
 
     # part (a)
+    BL = breedenLitzenberger(S, K, T, r, sigma)
+    table = {}
 
+    for row in volDictionary:
+        delta = int(row[:2])/100
+        type = row[-1]
+        oneM = BL.strikeTransform(type,volDictionary[row][0]/100,1/12,delta)
+        threeM = BL.strikeTransform(type,volDictionary[row][1]/100,3/12,delta)
+        table[row] = [oneM,threeM]
+    volTable = pd.DataFrame.from_dict(table,orient='index',columns=['1M','3M'])
+    print(volTable)
 
+    # part (b)
+    strikeList = np.linspace(65, 112, 100)
+    interp1M = np.polyfit(volTable['1M'], volDF['1M']/100,2)
+    interp3M = np.polyfit(volTable['3M'], volDF['3M']/100,2)
+    oneMvol = np.poly1d(interp1M)(strikeList)
+    threeMvol = np.poly1d(interp3M)(strikeList)
+    plt.plot(strikeList,oneMvol,color='r',label='1M vol')
+    plt.plot(strikeList,threeMvol,color='b',label='3M vol')
+    plt.xlabel('Strike Range')
+    plt.ylabel('Volatilities')
+    plt.title('Strike Against Volatility')
+    plt.legend()
+    plt.grid(linestyle='--', linewidth=0.75)
+    plt.show()
 
+    # part (c)
+    pdf1 = BL.riskNeutral(S,strikeList,1/12,r,oneMvol,0.1)
+    pdf2 = BL.riskNeutral(S,strikeList,3/12,r,threeMvol,0.1)
+    plt.plot(pdf1[1], pdf1[0],label='1M volatility',linewidth=2)
+    plt.plot(pdf2[1], pdf2[0], label='3M volatility',linewidth=2)
+    plt.xlabel('Strike Range')
+    plt.ylabel('Density')
+    plt.title('Risk-Neutral Densities')
+    plt.legend()
+    plt.grid(linestyle='--', linewidth=0.75)
+    plt.show()
 
+    # part (d)
+    cpdf1 = BL.constantVolatiltiy(S, 1/12, r, 0.1824, 0.1)
+    cpdf2 = BL.constantVolatiltiy(S, 3/12, r, 0.1645, 0.1)
+    plt.plot(cpdf1[1], cpdf1[0], label='1M volatility',linewidth=2)
+    plt.plot(cpdf2[1], cpdf2[0], label='3M volatility',linewidth=2)
+    plt.xlabel('Strike Range')
+    plt.ylabel('Density')
+    plt.title('Risk-Neutral Densities(const. vol)')
+    plt.legend()
+    plt.grid(linestyle='--', linewidth=0.75)
+    plt.show()
+
+    # part (e)
+    S = np.linspace(65,112,len(pdf1))
+    p1 = BL.deltaPrice(pdf1, S, 110,'P')
+    p2 = BL.deltaPrice(pdf2, S,105,'C')
+    v = (threeMvol+oneMvol)/2
+    eupdf = BL.riskNeutral(100,strikeList,2/12,r,v,0.1)
+    p3 = BL.euroPayoff(eupdf,S,100)
+    print()
+    print(f'1M European Digital Put Option with Strike 110:  {p1}')
+    print(f'3M European Digital Call Option with Strike 105:  {p2}')
+    print(f'2M European Call Option with Strike 100:  {p3}\n')
+
+    # problem 2
     S = 100
     K = 100.15
     T = 200/365
