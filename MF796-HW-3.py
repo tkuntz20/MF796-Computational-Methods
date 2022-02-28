@@ -261,11 +261,8 @@ class hestonCalibration(FastFourierTransforms):
         # arb checks
         return pd.Series([monotonic, dc, convexity], index=['Monotonic','Delat','convexity'])
 
-
-        return
-
     def calibrateToHeston(self):
-        
+
         return
 
 
