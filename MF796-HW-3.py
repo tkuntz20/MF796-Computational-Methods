@@ -163,7 +163,7 @@ class FastFourierTransforms():
 
         return x, y, a, b
 
-class breedenLitzenberger(base):
+class breedenLitzenberger(euroGreeks):
 
     def __init__(self,S, K, T, r, sigma):
         self.S = S
