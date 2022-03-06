@@ -74,7 +74,7 @@ class euroGreeks(base):
         pTheta = (-self.sigma * self.S * density) / (2 * np.sqrt(self.T)) + self.r * self.K * np.exp(-self.r * self.T) * si.norm.cdf(-self.d2(self.S, self.K, self.T, self.r, self.sigma), 0.0, 1.0)
         return cTheta, pTheta
 
-class FastFourierTransforms():
+class FastFourierTransforms(euroGreeks):
 
     def __init__(self, S, K, T, r, q, sigma, nu, kappa, rho, theta):
         self.S = S
@@ -163,7 +163,7 @@ class FastFourierTransforms():
 
         return x, y, a, b
 
-class breedenLitzenberger(euroGreeks):
+class breedenLitzenberger(FastFourierTransforms):
 
     def __init__(self,S, K, T, r, sigma):
         self.S = S
@@ -172,10 +172,24 @@ class breedenLitzenberger(euroGreeks):
         self.r = r
         self.sigma = sigma
 
+    def digitalPayoff(self,S,K,type):
+        if type == 'C':
+            p = 1 if S>=K else 0
+        else:
+            p = 1 if S<=K else 0
+        return p
+
+    def digitalPrice(self,density,S,K,type):
+        value = 0
+        for i in range(0, len(S)-2):
+            value += density[i] * self.digitalPayoff(S[i], K, type) * 0.1
+            #print(value)
+        return value
+
     def euroPayoff(self, density, S, K):
         payoff = 0
         for i in range(0, len(S)-2):
-            payoff += density[i] * self.deltaPayoff(S[i], K)
+            payoff += density[i] * max(0, S[i] - K) * 0.1
         return payoff
 
     def strikeTransform(self,type, sigma, expiry, delta):
@@ -185,13 +199,6 @@ class breedenLitzenberger(euroGreeks):
         else:
             K = 100 * np.exp(0.5 * sigma ** 2 * expiry - sigma * np.sqrt(expiry) * transform)
         return K
-
-    def extractStrikes(self, type, sigma,expiry,delta):
-
-        if type == 'P':
-            return root(lambda x: norm.ppf(delta)-(np.log(self.S/x)+(self.r+0.5*sigma**2)*expiry) / (sigma * np.sqrt(expiry)), self.S).x
-        else:
-            return root(lambda x: norm.ppf(delta+1)-(np.log(self.S/x)+(self.r+0.5*sigma**2)*expiry) / (sigma * np.sqrt(expiry)), self.S).x
 
     def gammaTransform(self,S,K,T,r,sigma,h):
         value = base.euroCall(self,S, K, T, r, sigma)
@@ -204,53 +211,41 @@ class breedenLitzenberger(euroGreeks):
         for jj, vol in enumerate(sigma):
             p = np.exp(r*T) * self.gammaTransform(S, K[jj], T, r, vol,h)
             pdf.append(p)
-        return pdf, K
+        return pdf
 
     def constantVolatiltiy(self,S,T,r,sigma,h):
         K = np.linspace(70, 130, 150)
         pdf = []
-        for k in K:
+        for i, k in enumerate(K):
             p = np.exp(r*T) * self.gammaTransform(S, k, T, r, sigma,h)
             pdf.append(p)
         return pdf, K
 
-    def digitalPayoff(self,S,K,type):
-        if type == 'P':
-            return 1 if S>=K else 0
-        else:
-            return 1 if S<=K else 0
-
-    def digitalPrice(self,density,S,K,type):
-        value = 0
-        for i in range(0, len(S)-2):
-            value += density[i] * self.deltaPayoff(S[i],K,type) * 0.1
-        return value
-
-class hestonCalibration(FastFourierTransforms):
+class hestonCalibration(breedenLitzenberger):
 
     def __init__(self,excel):
         self.excel = excel
 
     def __repr__(self):
-        return
+        return f'The imported data frame is:\n  {self.excel}'
 
     def data(self):
-        df = pd.read_excel(self.excel)
+        df = pd.DataFrame(self.excel)
         df['mid_price_call'] = (df.call_bid + df.call_ask) / 2
         df['mid_price_put'] = (df.put_bid + df.put_ask) / 2
-        putDF = df[['expDays', 'expT', 'K','mid_price_call', 'call_ask', 'call_bid']]
-        callDF =df[['expDays', 'expT', 'K', 'mid_price_put', 'put_ask', 'put_bid']]
+        callDF = df[['expDays', 'expT', 'K','mid_price_call', 'call_ask', 'call_bid']]
+        putDF =df[['expDays', 'expT', 'K', 'mid_price_put', 'put_ask', 'put_bid']]
         return df, putDF, callDF
 
     def arbitrage(self,df,type):
         mid = df.columns[df.columns.str.contains('mid')][0]
-        if type == 'C':
+        if type == 'c':
             monotonic = any(df[mid].pct_change().dropna() >= 0)
         else:
             monotonic = any(df[mid].pct_change().dropna() <= 0)
 
         df['delta'] = (df[mid] - df[mid].shift(1)) / (df.K - df.K.shift(1))
-        if type == 'C':
+        if type == 'c':
             dc = any(df.delta >= 0) or any(df.delta < -1)
         else:
             dc = any(df.delta > 1) or any(df.delta <= 0)
@@ -259,7 +254,7 @@ class hestonCalibration(FastFourierTransforms):
         convexity = any(df.convex < 0)
 
         # arb checks
-        return pd.Series([monotonic, dc, convexity], index=['Monotonic','Delat','convexity'])
+        return pd.Series([monotonic, dc, convexity], index=['Monotonic','Delta','Convexity'])
 
     def calibrateToHeston(self):
 
@@ -268,32 +263,6 @@ class hestonCalibration(FastFourierTransforms):
 
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    # european option inputs
-    S = 100
-    K = 100.15
-    T = 200/365
-    r = 0.0
-    sigma = 0.1712
-
-    Base = base(S, K, T, r, sigma)
-    df = Base.discountFactor(r, T)
-    print(f'{repr(Base)}\n')
-    print(f'european d1 is:  {Base.d1(S, K, T, r, sigma)}')
-    print(f'european d2 is:  {Base.d2(S, K, T, r, sigma)}')
-    print(f'   The call is:  {Base.euroCall(S, K, T, r, sigma)}')
-    print(f'    The put is:  {Base.euroPut(S, K, T, r, sigma)}')
-    print(f'discount factor: {Base.discountFactor(r, T)}\n')
-
-    Greeks = euroGreeks(S, K, T, r, sigma)
-    cDelta, pDelta = Greeks.delta()
-    print(f'call delta:  {cDelta}')
-    print(f'put delta:   {pDelta}')
-    print(f'gamma:       {Greeks.gamma()}')
-    print(f'vega:        {Greeks.vega()}')
-    print(f'put theta:   {Greeks.theta()[1]}')
-    print(f'call theta:  {Greeks.theta()[0]}')
-    print('------------------tests above------------------\n')
 
     # Volatility table-------------------------------------------------
     expiryStrike = ['10DP','25DP','40DP','50DP','40DC','25DC','10DC']
@@ -322,11 +291,13 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     print(volTable)
 
     # part (b)
-    strikeList = np.linspace(65, 112, 100)
+    strikeList = np.linspace(75, 110, 100)
+
     interp1M = np.polyfit(volTable['1M'], volDF['1M']/100,2)
     interp3M = np.polyfit(volTable['3M'], volDF['3M']/100,2)
     oneMvol = np.poly1d(interp1M)(strikeList)
     threeMvol = np.poly1d(interp3M)(strikeList)
+
     plt.plot(strikeList,oneMvol,color='r',label='1M vol')
     plt.plot(strikeList,threeMvol,color='b',label='3M vol')
     plt.xlabel('Strike Range')
@@ -339,8 +310,8 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     # part (c)
     pdf1 = BL.riskNeutral(S,strikeList,1/12,r,oneMvol,0.1)
     pdf2 = BL.riskNeutral(S,strikeList,3/12,r,threeMvol,0.1)
-    plt.plot(pdf1[1], pdf1[0],label='1M volatility',linewidth=2,color='r')
-    plt.plot(pdf2[1], pdf2[0], label='3M volatility',linewidth=2,color='b')
+    plt.plot(strikeList, pdf1, label='1M volatility',linewidth=2,color='r')
+    plt.plot(strikeList, pdf2, label='3M volatility',linewidth=2,color='b')
     plt.xlabel('Strike Range')
     plt.ylabel('Density')
     plt.title('Risk-Neutral Densities')
@@ -361,9 +332,10 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     plt.show()
 
     # part (e)
-    S = np.linspace(65,112,len(pdf1))
-    p1 = BL.digitalPrice(pdf1, S, 110,'P')
-    p2 = BL.digitalPrice(pdf2, S,105,'C')
+    S = np.linspace(75, 112.5, len(pdf1))
+    p1 = BL.digitalPrice(pdf1, S, K=110,type='P')
+    p2 = BL.digitalPrice(pdf2, S,K=105,type='C')
+
     v = (threeMvol+oneMvol)/2
     eupdf = BL.riskNeutral(100,strikeList,2/12,r,v,0.1)
     p3 = BL.euroPayoff(eupdf,S,100)
@@ -388,5 +360,17 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     rho = -0.4
     theta = 0.1
     FFT = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, rho, theta)
-    print(repr(FFT))
+    print(f'{repr(FFT)} \n')
 
+    excel = pd.read_excel(r'C:\Users\kuntz\My Drive\Quant Stuff\MF 796 Computational Methods\MF796-repository\MF796-Computational-Methods\mf796-hw3-opt-data.xlsx')
+    HC = hestonCalibration(excel)
+    print(repr(HC))
+
+    whole, puts, calls = HC.data()
+    #print(puts.head())
+
+    # part a
+    callArb = calls.groupby('expDays').apply(HC.arbitrage, type = 'c')
+    putArb = calls.groupby('expDays').apply(HC.arbitrage, type='p')
+    print(f'\n Arb. checks for Calls:\n  {callArb}')
+    print(f'Arb. checks for Puts:\n   {putArb}')
