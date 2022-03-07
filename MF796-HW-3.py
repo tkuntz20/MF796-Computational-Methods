@@ -364,9 +364,9 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     eupdf = BL.riskNeutral(100,strikeList,2/12,r,v,0.1)
     p3 = BL.euroPayoff(eupdf,S,100)
     print()
-    print(f'1M European Digital Put Option with Strike 110:  {p1}')
+    print(f'1M European Digital Put Option with Strike 110:   {p1}')
     print(f'3M European Digital Call Option with Strike 105:  {p2}')
-    print(f'2M European Call Option with Strike 100:  {p3}\n')
+    print(f'2M European Call Option with Strike 100:          {p3}\n')
 
 
     # problem 2
