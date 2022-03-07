@@ -414,13 +414,14 @@ if __name__ == '__main__':
     excel = pd.read_excel(r'C:\Users\kuntz\My Drive\Quant Stuff\MF 796 Computational Methods\MF796-repository\MF796-Computational-Methods\mf796-hw3-opt-data.xlsx')
     HC = hestonCalibration(excel)
     print(repr(HC))
-
     whole, puts, calls = HC.data()
+
     # part a
     callArb = calls.groupby('expDays').apply(HC.arbitrage, type = 'c')
     putArb = puts.groupby('expDays').apply(HC.arbitrage, type='p')
-    print(f'\n Arb. checks for Calls:\n  {callArb}')
-    print(f'Arb. checks for Puts:\n   {putArb}\n')
+    print(f'\n   Arbitrage Checks for the Input Data')
+    print(f'                Calls\n  {callArb}')
+    print(f'                Puts\n   {putArb}\n')
 
     # part b
     sigma = 0.2
@@ -434,9 +435,15 @@ if __name__ == '__main__':
     lower = [0.01, 0.01, 0.0, -1, 0.0]
     upper = [2.5, 1, 1, 0.5, 0.5]
     bounds = tuple(zip(lower, upper))
+    print(f'-----Bounds and Initial Guesses-----')
+    print(f'Lower bound {lower}')
+    print(f'Guess       {lst}')
+    print(f'Upper bound {upper}')
+    print()
     times = 1
     param = (alpha, calls, puts)
     minValues = minimize(HC.optimizer, np.array(lst), args=param, method='SLSQP', bounds=bounds, callback=HC.cb1)
+    print('----Minimized Outputs----')
     print(minValues.success)
     print(minValues.x)
     print(minValues.fun)
@@ -454,8 +461,14 @@ if __name__ == '__main__':
     lower1 = [0.01, 0.01, 0.0, -1, 0.0]
     upper1 = [2.5, 1, 1, 0.5, 0.5]
     bounds1 = tuple(zip(lower, upper))
+    print(f'-----Bounds and Initial Guesses-----')
+    print(f'Lower bound {lower1}')
+    print(f'Guess       {lst1}')
+    print(f'Upper bound {upper1}\n')
+    print()
     param1 = (alpha, calls, puts, True)
     minValues1 = minimize(HC.optimizer, np.array(lst1), args=param1, method='SLSQP', bounds=bounds1, callback=HC.cb2)
+    print('------Minimized Outputs------')
     print(minValues1.success)
     print(minValues1.x)
     print(minValues1.fun)
