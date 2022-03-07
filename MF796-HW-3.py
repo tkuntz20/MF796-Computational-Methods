@@ -16,6 +16,8 @@ import time
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import root, minimize
 from scipy import interpolate
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class base:
@@ -264,7 +266,7 @@ class hestonCalibration(breedenLitzenberger):
         value = FFT.heston(alpha, K, Klst, N=9, B=1000)
         return value[0]
 
-    def squareSum(self, data, alpha, lst, weighted):
+    def squareSum(self, data, alpha, lst, weighted=False):
         #print(data)
         options = data.columns[3].split('_')[0]
         opt = 0
@@ -292,17 +294,20 @@ class hestonCalibration(breedenLitzenberger):
     def cb1(self, x):
         global times
         if times % 5 == 0:
-            print('{}: {}'.format(times, self.optimizer(alpha, x, calls, puts)))
+            print('{}: {}'.format(times, self.optimizer(x, alpha, calls, puts)))
             print(x)
         times += 1
         return
 
     def cb2(self, x):
         global times
-        print('{}: {}'.format(times, self.optimizer(alpha, x, calls, puts, True)))
+        print('{}: {}'.format(times, self.optimizer(x, alpha, calls, puts, True)))
         print(x)
         times += 1
         return
+
+#class hedgingViaHeston(hestonCalibration):
+
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -399,7 +404,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     callArb = calls.groupby('expDays').apply(HC.arbitrage, type = 'c')
     putArb = puts.groupby('expDays').apply(HC.arbitrage, type='p')
     print(f'\n Arb. checks for Calls:\n  {callArb}')
-    print(f'Arb. checks for Puts:\n   {putArb}')
+    print(f'Arb. checks for Puts:\n   {putArb}\n')
 
     # part b
     sigma = 0.2
@@ -425,17 +430,16 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     sigma = 1.67
     alpha = 1.5
     nu = 0.04
-    kappa = 4.14
+    kappa = 4.45
     rho = -0.81
     theta = 0.06
-    lst = [kappa, theta, sigma, rho, nu]
+    lst1 = [kappa, theta, sigma, rho, nu]
 
-    lower = [0.01, 0.01, 0.0, -1, 0.0]
-    upper = [2.5, 1, 1, 0.5, 0.5]
-    bounds = tuple(zip(lower, upper))
-    param = (alpha, calls, puts, True)
-    minValues = minimize(HC.optimizer, np.array(lst), args=param, method='SLSQP', bounds=bounds, callback=HC.cb2)
+    lower1 = [0.01, 0.01, 0.0, -1, 0.0]
+    upper1 = [2.5, 1, 1, 0.5, 0.5]
+    bounds1 = tuple(zip(lower, upper))
+    param1 = (alpha, calls, puts, True)
+    minValues1 = minimize(HC.optimizer, np.array(lst1), args=param1, method='SLSQP', bounds=bounds1, callback=HC.cb2)
     print(minValues.success)
     print(minValues.x)
     print(minValues.fun)
-    print()
