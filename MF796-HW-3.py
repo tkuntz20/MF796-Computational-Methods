@@ -335,7 +335,7 @@ class hedgingViaHeston(hestonCalibration):
         impliedVol = root(lambda x: base.euroCall(self, self.S, self.K, self.T, self.r, x) - value, 0.01).x
         return vega, impliedVol
 
-if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+if __name__ == '__main__':
 
     # Volatility table-------------------------------------------------
     expiryStrike = ['10DP','25DP','40DP','50DP','40DC','25DC','10DC']
