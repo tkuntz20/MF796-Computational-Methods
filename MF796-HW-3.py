@@ -435,7 +435,7 @@ if __name__ == '__main__':
     lower = [0.01, 0.01, 0.0, -1, 0.0]
     upper = [2.5, 1, 1, 0.5, 0.5]
     bounds = tuple(zip(lower, upper))
-    print(f'-----Bounds and Initial Guesses-----')
+    print(f'------Bounds and Initial Guesses------')
     print(f'Lower bound {lower}')
     print(f'Guess       {lst}')
     print(f'Upper bound {upper}')
@@ -443,11 +443,11 @@ if __name__ == '__main__':
     times = 1
     param = (alpha, calls, puts)
     minValues = minimize(HC.optimizer, np.array(lst), args=param, method='SLSQP', bounds=bounds, callback=HC.cb1)
-    print('----Minimized Outputs----')
-    print(minValues.success)
-    print(minValues.x)
-    print(minValues.fun)
-    print()
+    print('---------Minimized Outputs---------')
+    print(f'success(True/False) {minValues.success}')
+    print(f' kappa | theta | sigma | rho | nu')
+    print(f' {minValues.x[0]}  |  {minValues.x[1]}  | {minValues.x[2]}   | {minValues.x[3]} |{minValues.x[4]}')
+    print(f'minimized value  {minValues.fun}\n')
 
     # part c & d
     sigma = 1.67
@@ -468,11 +468,11 @@ if __name__ == '__main__':
     print()
     param1 = (alpha, calls, puts, True)
     minValues1 = minimize(HC.optimizer, np.array(lst1), args=param1, method='SLSQP', bounds=bounds1, callback=HC.cb2)
-    print('------Minimized Outputs------')
-    print(minValues1.success)
-    print(minValues1.x)
-    print(minValues1.fun)
-    print()
+    print('---------Minimized Outputs---------')
+    print(f'success(True/False) {minValues1.success}')
+    print(f'  kappa |  theta | sigma |  rho   | nu')
+    print(f' {minValues1.x[0]} | {minValues1.x[1]} | {minValues1.x[2]}  | {minValues1.x[3]}| {minValues1.x[4]}')
+    print(f'minimized value  {minValues1.fun}\n')
 
 
     # problem 3
