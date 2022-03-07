@@ -8,12 +8,8 @@ import numpy as np
 import pandas as pd
 import cmath
 import scipy.stats as si
-from scipy.stats import kurtosis, skew, mode, norm
 import matplotlib.pyplot as plt
-from matplotlib import cm
-import re
 import time
-from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import root, minimize
 from scipy import interpolate
 import warnings
@@ -353,7 +349,6 @@ if __name__ == '__main__':
     # part (a)
     BL = breedenLitzenberger(S, K, T, r, sigma)
     table = {}
-
     for row in volDictionary:
         delta = int(row[:2])/100
         type = row[-1]
@@ -365,12 +360,10 @@ if __name__ == '__main__':
 
     # part (b)
     strikeList = np.linspace(75, 110, 100)
-
     interp1M = np.polyfit(volTable['1M'], volDF['1M']/100,2)
     interp3M = np.polyfit(volTable['3M'], volDF['3M']/100,2)
     oneMvol = np.poly1d(interp1M)(strikeList)
     threeMvol = np.poly1d(interp3M)(strikeList)
-
     plt.plot(strikeList,oneMvol,color='r',label='1M vol')
     plt.plot(strikeList,threeMvol,color='b',label='3M vol')
     plt.xlabel('Strike Range')
@@ -408,7 +401,6 @@ if __name__ == '__main__':
     S = np.linspace(75, 112.5, len(pdf1))
     p1 = BL.digitalPrice(pdf1, S, K=110,type='P')
     p2 = BL.digitalPrice(pdf2, S,K=105,type='C')
-
     v = (threeMvol+oneMvol)/2
     eupdf = BL.riskNeutral(100,strikeList,2/12,r,v,0.1)
     p3 = BL.euroPayoff(eupdf,S,100)
@@ -419,11 +411,9 @@ if __name__ == '__main__':
 
 
     # problem 2
-
-
     excel = pd.read_excel(r'C:\Users\kuntz\My Drive\Quant Stuff\MF 796 Computational Methods\MF796-repository\MF796-Computational-Methods\mf796-hw3-opt-data.xlsx')
     HC = hestonCalibration(excel)
-    #print(repr(HC))
+    print(repr(HC))
 
     whole, puts, calls = HC.data()
     # part a
