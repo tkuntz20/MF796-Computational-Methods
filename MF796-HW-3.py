@@ -256,14 +256,35 @@ class hestonCalibration(breedenLitzenberger):
         # arb checks
         return pd.Series([monotonic, dc, convexity], index=['Monotonic','Delta','Convexity'])
 
-    def calibrateToHeston(self, K, strikeLst, N, alpha):
-        for B in strikeLst:
-            value = FastFourierTransforms.heston(alpha, N, B, K)
+    def helper2(self, K, B, N, alpha):
+        for b in B:
+            value = FastFourierTransforms.heston(alpha, N, b, K)
         return value
 
-    def squareSum(self, alpha, ):
+    def squareSum(self, alpha, data, weighted=False):
+        options = data.columns[3].split('_')[0]
+        opt = 0
+        if not weighted:
+            for T in data.expT.unique():
+                temp = data[data.expT == T]
+                lst = temp.K.values
+                values = self.helper2(np.mean(lst), lst, T, alpha)
+                opt += np.sum((values - temp[options + '_mid'].values)**2)
+        else:
+            for T in data.expT.unique():
+                temp = data[data.expT == T]
+                lst = temp.K.values
+                v = 1 / (temp[options + '_ask'] - temp[options + '_bid'])
+                v = v.values
+                values = self.helper2(np.mean(lst), lst, T, alpha)
+                opt += v.dot((values - temp[options + '_mid'].values)**2)
+        return opt
+
+    def helpFunction(self):
 
         return
+
+
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

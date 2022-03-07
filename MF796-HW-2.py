@@ -42,7 +42,7 @@ class FastFourierTransforms():
         self.K = K
         self.T = T
         self.r = r
-        self.q = q #dividend (in this case q=0)
+        self.q = q                   #dividend (in this case q=0)
         self.sigma = sigma
         self.nu = nu
         self.kappa = kappa
