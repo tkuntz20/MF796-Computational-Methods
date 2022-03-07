@@ -427,7 +427,7 @@ if __name__ == '__main__':
     sigma = 0.2
     alpha = 1.5
     nu = 0.2
-    kappa = 0.0
+    kappa = 0.5
     rho = 0.0
     theta = 0.2
     lst = [kappa, theta, sigma, rho, nu]
@@ -441,7 +441,7 @@ if __name__ == '__main__':
     print(f'Upper bound {upper}')
     print()
     times = 1
-    param = (alpha, calls, puts)
+    param = (alpha, calls, puts, False)
     minValues = minimize(HC.optimizer, np.array(lst), args=param, method='SLSQP', bounds=bounds, callback=HC.cb1)
     print('---------Minimized Outputs---------')
     print(f'success(True/False) {minValues.success}')
@@ -450,12 +450,12 @@ if __name__ == '__main__':
     print(f'minimized value  {minValues.fun}\n')
 
     # part c & d
-    sigma = 1.67
+    sigma = 1
     alpha = 1.5
-    nu = 0.04
-    kappa = 4.14
+    nu = 0.034
+    kappa = 1.76
     rho = -0.81
-    theta = 0.06
+    theta = 0.07
     lst1 = [kappa, theta, sigma, rho, nu]
 
     lower1 = [0.01, 0.01, 0.0, -1, 0.0]
@@ -486,7 +486,7 @@ if __name__ == '__main__':
     lst = np.array([3.51,0.052,1.17,-0.77,0.034])
     HVH = hedgingViaHeston(K,S,r,T,h,alpha,lst)
     dh = HVH.deltaHedge()
-    vh = HVH.vegaHedge(0.0017)
+    vh = HVH.vegaHedge(0.01)
     delta = euroGreeks(S, K, T, r, float(dh[1])).delta()
     print(f'Heston delta: {dh[0]}  implied vol: {float(dh[1])}')
     print(f'Black delta:  {delta[0]}\n')
