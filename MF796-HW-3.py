@@ -306,8 +306,34 @@ class hestonCalibration(breedenLitzenberger):
         times += 1
         return
 
-#class hedgingViaHeston(hestonCalibration):
+class hedgingViaHeston(hestonCalibration):
 
+    def __init__(self, K, S, r, T, h, alpha, lst):
+        self.lst = lst
+        self.alpha = alpha
+        self.K = K
+        self.S = S
+        self.r = r
+        self.T = T
+        self.h = h
+
+    def deltaHedge(self):
+        value = FastFourierTransforms(self.T, lst,S=self.S).heston(self.alpha,self.K,None,10,1000)
+        valuePlus = FastFourierTransforms(self.T, lst,S=self.S+self.h).heston(self.alpha,self.K,None,10,1000)
+        valueDown = FastFourierTransforms(self.T, lst,S=self.S-self.h).heston(self.alpha,self.K,None,10,1000)
+        delta = (valuePlus-valueDown)/2/self.h
+        impliedVol = root(lambda x: base.euroCall(self, self.S,self.K,self.T,self.r,x) - value, 0.01).x
+        return delta, impliedVol
+
+    def vegaHedge(self,g):
+        value = FastFourierTransforms(self.T, lst, S=self.S).heston(self.alpha, self.K, None, 10, 1000)
+        lst1 = self.lst + np.array([0, g, 0, 0, g])
+        valuePlus = FastFourierTransforms(self.T, lst1, S=self.S + self.h).heston(self.alpha, self.K, None, 10, 1000)
+        lst2 = self.lst - np.array([0, g, 0, 0, g])
+        valueDown = FastFourierTransforms(self.T, lst2, S=self.S - self.h).heston(self.alpha, self.K, None, 10, 1000)
+        vega = (valuePlus-valueDown)/2/g
+        impliedVol = root(lambda x: base.euroCall(self, self.S, self.K, self.T, self.r, x) - value, 0.01).x
+        return vega, impliedVol
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -430,7 +456,7 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     sigma = 1.67
     alpha = 1.5
     nu = 0.04
-    kappa = 4.45
+    kappa = 4.14
     rho = -0.81
     theta = 0.06
     lst1 = [kappa, theta, sigma, rho, nu]
@@ -440,6 +466,33 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     bounds1 = tuple(zip(lower, upper))
     param1 = (alpha, calls, puts, True)
     minValues1 = minimize(HC.optimizer, np.array(lst1), args=param1, method='SLSQP', bounds=bounds1, callback=HC.cb2)
-    print(minValues.success)
-    print(minValues.x)
-    print(minValues.fun)
+    print(minValues1.success)
+    print(minValues1.x)
+    print(minValues1.fun)
+    print()
+
+
+    # problem 3
+    # part a & b
+    K = 275
+    S = 267.15
+    r = 0.015
+    T = 0.25
+    h =0.01
+    alpha = 1.5
+    lst = np.array([3.51,0.052,1.17,-0.77,0.034])
+    HVH = hedgingViaHeston(K,S,r,T,h,alpha,lst)
+    dh = HVH.deltaHedge()
+    vh = HVH.vegaHedge(0.0017)
+    delta = euroGreeks(S, K, T, r, float(dh[1])).delta()
+    print(f'Heston delta: {dh[0]}  implied vol: {float(dh[1])}')
+    print(f'Black delta:  {delta[0]}\n')
+    b = base(S, K, T, r, float(dh[1]))
+    callv = b.euroCall(S, K, T, r, float(dh[1]))
+    print(f'euro call {callv}')
+
+
+    vega = euroGreeks(S,K,T,r,float(vh[1])).vega()
+    print(f'Heston vega:  {vh[0]}  implied vol: {float(vh[1])}')
+    print(f'Black vega:   {vega}')
+
