@@ -76,20 +76,19 @@ class euroGreeks(base):
 
 class FastFourierTransforms(euroGreeks):
 
-    def __init__(self, S, K, T, r, q, sigma, nu, kappa, rho, theta):
+    def __init__(self, T, lst, S=267.15, r=0.0015, q=0.0177):
         self.S = S
-        self.K = K
         self.T = T
         self.r = r
         self.q = q  # dividend (in this case q=0)
-        self.sigma = sigma
-        self.nu = nu
-        self.kappa = kappa
-        self.rho = rho
-        self.theta = theta
+        self.kappa = lst[0]
+        self.theta = lst[1]
+        self.sigma = lst[2]
+        self.rho = lst[3]
+        self.nu = lst[4]
 
     def __repr__(self):
-        return f'FFT Class initial price level is: {self.S}, strike is: {self.K}, expiry is: {self.T}, interest rate is: ' \
+        return f'FFT Class initial price level is: {self.S}, expiry is: {self.T}, interest rate is: ' \
                f'{self.r},\n dividend is: {self.q}, volatility is: {self.sigma}, nu is: {self.nu}, kappa is: {self.kappa}, rho is: {self.rho}, theta is: {self.theta}'
 
     def helper(self, n):
@@ -108,6 +107,7 @@ class FastFourierTransforms(euroGreeks):
         S = self.S
         r = self.r
         T = self.T
+        q = self.q
 
         i = complex(0, 1)
         Lambda = cmath.sqrt(sigma ** 2 * (u ** 2 + i * u) + (kappa - i * rho * sigma * u) ** 2)
@@ -115,7 +115,7 @@ class FastFourierTransforms(euroGreeks):
         phi = omega * np.exp(-(u ** 2 + i * u) * nu / (Lambda / cmath.tanh(Lambda * T / 2) + kappa - i * rho * sigma * u))
         return phi
 
-    def heston(self, alpha, N, B, K):
+    def heston(self, alpha, K, Klst, N, B):
 
         t = time.time()
         tau = B / (2 ** N)
@@ -143,12 +143,15 @@ class FastFourierTransforms(euroGreeks):
                 Kfft += [Kt[gg]]
                 ffT += [ffTwo[gg]]
         spline = interpolate.splrep(Kfft, np.real(ffT))
-        value = np.exp(-self.r * self.T) * interpolate.splev(K, spline).real
+        if Klst is not None:
+            value = np.exp(-self.r * self.T) * interpolate.splev(Klst, spline).real
+        else:
+            value = np.exp(-self.r * self.T) * interpolate.splev(K, spline).real
 
         tt = time.time()
         compTime = tt - t
 
-        return (value, compTime)
+        return value
 
     def strikeCalibration(self, size, strikesLst, K):
         x = np.zeros((len(size), len(strikesLst)))
@@ -231,10 +234,10 @@ class hestonCalibration(breedenLitzenberger):
 
     def data(self):
         df = pd.DataFrame(self.excel)
-        df['mid_price_call'] = (df.call_bid + df.call_ask) / 2
-        df['mid_price_put'] = (df.put_bid + df.put_ask) / 2
-        callDF = df[['expDays', 'expT', 'K','mid_price_call', 'call_ask', 'call_bid']]
-        putDF =df[['expDays', 'expT', 'K', 'mid_price_put', 'put_ask', 'put_bid']]
+        df['call_mid'] = (df.call_bid + df.call_ask) / 2
+        df['put_mid'] = (df.put_bid + df.put_ask) / 2
+        callDF = df[['expDays', 'expT', 'K','call_mid', 'call_ask', 'call_bid']]
+        putDF =df[['expDays', 'expT', 'K', 'put_mid', 'put_ask', 'put_bid']]
         return df, putDF, callDF
 
     def arbitrage(self,df,type):
@@ -256,35 +259,50 @@ class hestonCalibration(breedenLitzenberger):
         # arb checks
         return pd.Series([monotonic, dc, convexity], index=['Monotonic','Delta','Convexity'])
 
-    def helper2(self, K, B, N, alpha):
-        for b in B:
-            value = FastFourierTransforms.heston(alpha, N, b, K)
-        return value
+    def helper2(self, K, Klst, alpha, T, lst):
+        FFT = FastFourierTransforms(T, lst)
+        value = FFT.heston(alpha, K, Klst, N=9, B=1000)
+        return value[0]
 
-    def squareSum(self, alpha, data, weighted=False):
+    def squareSum(self, data, alpha, lst, weighted):
+        #print(data)
         options = data.columns[3].split('_')[0]
         opt = 0
         if not weighted:
             for T in data.expT.unique():
                 temp = data[data.expT == T]
-                lst = temp.K.values
-                values = self.helper2(np.mean(lst), lst, T, alpha)
+                Klst = temp.K.values
+                values = self.helper2(np.mean(Klst), Klst, alpha, T, lst)
                 opt += np.sum((values - temp[options + '_mid'].values)**2)
         else:
             for T in data.expT.unique():
                 temp = data[data.expT == T]
-                lst = temp.K.values
+                Klst = temp.K.values
                 v = 1 / (temp[options + '_ask'] - temp[options + '_bid'])
                 v = v.values
-                values = self.helper2(np.mean(lst), lst, T, alpha)
+                values = self.helper2(np.mean(Klst), Klst, alpha, T, lst)
                 opt += v.dot((values - temp[options + '_mid'].values)**2)
         return opt
 
-    def helpFunction(self):
+    def optimizer(self, lst, alpha, calls, puts, weighted=False):
+        callValue = self.squareSum(calls, alpha, lst, weighted)
+        putVlaue = self.squareSum(puts, alpha, lst, weighted)
+        return callValue + putVlaue
 
+    def cb1(self, x):
+        global times
+        if times % 5 == 0:
+            print('{}: {}'.format(times, self.optimizer(alpha, x, calls, puts)))
+            print(x)
+        times += 1
         return
 
-
+    def cb2(self, x):
+        global times
+        print('{}: {}'.format(times, self.optimizer(alpha, x, calls, puts, True)))
+        print(x)
+        times += 1
+        return
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -370,41 +388,54 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
 
 
     # problem 2
-    S = 100
-    K = 100.15
-    T = 200/365
-    r = 0.0
-    q = 0.0
-    sigma = 0.1712
-    alpha = 1
-    N = 10
-    B = 10000
-    nu = 0.08
-    kappa = 0.7
-    rho = -0.4
-    theta = 0.1
-    FFT = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, rho, theta)
-    print(f'{repr(FFT)} \n')
+
 
     excel = pd.read_excel(r'C:\Users\kuntz\My Drive\Quant Stuff\MF 796 Computational Methods\MF796-repository\MF796-Computational-Methods\mf796-hw3-opt-data.xlsx')
     HC = hestonCalibration(excel)
-    print(repr(HC))
+    #print(repr(HC))
 
     whole, puts, calls = HC.data()
-    #print(puts.head())
-
     # part a
     callArb = calls.groupby('expDays').apply(HC.arbitrage, type = 'c')
-    putArb = calls.groupby('expDays').apply(HC.arbitrage, type='p')
+    putArb = puts.groupby('expDays').apply(HC.arbitrage, type='p')
     print(f'\n Arb. checks for Calls:\n  {callArb}')
     print(f'Arb. checks for Puts:\n   {putArb}')
 
     # part b
-    start_params = [0, 0.2, 0.2, 0, 0.2]
+    sigma = 0.2
+    alpha = 1.5
+    nu = 0.2
+    kappa = 0.0
+    rho = 0.0
+    theta = 0.2
+    lst = [kappa, theta, sigma, rho, nu]
+
     lower = [0.01, 0.01, 0.0, -1, 0.0]
     upper = [2.5, 1, 1, 0.5, 0.5]
     bounds = tuple(zip(lower, upper))
-    alpha = 1.5
-
     times = 1
-    args = (alpha, calls, puts)
+    param = (alpha, calls, puts)
+    minValues = minimize(HC.optimizer, np.array(lst), args=param, method='SLSQP', bounds=bounds, callback=HC.cb1)
+    print(minValues.success)
+    print(minValues.x)
+    print(minValues.fun)
+    print()
+
+    # part c & d
+    sigma = 1.67
+    alpha = 1.5
+    nu = 0.04
+    kappa = 4.14
+    rho = -0.81
+    theta = 0.06
+    lst = [kappa, theta, sigma, rho, nu]
+
+    lower = [0.01, 0.01, 0.0, -1, 0.0]
+    upper = [2.5, 1, 1, 0.5, 0.5]
+    bounds = tuple(zip(lower, upper))
+    param = (alpha, calls, puts, True)
+    minValues = minimize(HC.optimizer, np.array(lst), args=param, method='SLSQP', bounds=bounds, callback=HC.cb2)
+    print(minValues.success)
+    print(minValues.x)
+    print(minValues.fun)
+    print()
