@@ -256,11 +256,14 @@ class hestonCalibration(breedenLitzenberger):
         # arb checks
         return pd.Series([monotonic, dc, convexity], index=['Monotonic','Delta','Convexity'])
 
-    def calibrateToHeston(self):
+    def calibrateToHeston(self, K, strikeLst, N, alpha):
+        for B in strikeLst:
+            value = FastFourierTransforms.heston(alpha, N, B, K)
+        return value
+
+    def squareSum(self, alpha, ):
 
         return
-
-
 
 if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -374,3 +377,13 @@ if __name__ == '__main__':      # ++++++++++++++++++++++++++++++++++++++++++++++
     putArb = calls.groupby('expDays').apply(HC.arbitrage, type='p')
     print(f'\n Arb. checks for Calls:\n  {callArb}')
     print(f'Arb. checks for Puts:\n   {putArb}')
+
+    # part b
+    start_params = [0, 0.2, 0.2, 0, 0.2]
+    lower = [0.01, 0.01, 0.0, -1, 0.0]
+    upper = [2.5, 1, 1, 0.5, 0.5]
+    bounds = tuple(zip(lower, upper))
+    alpha = 1.5
+
+    times = 1
+    args = (alpha, calls, puts)
