@@ -4,6 +4,7 @@ Created on Sun Mar. 14 21:05:52 2022
 """
 
 import cvxpy as opt
+import cvxopt as cvx
 import numpy as np
 import pandas as pd
 import seaborn as sns
