@@ -7,8 +7,6 @@ import math
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import cmath
-import scipy.stats as si
 import matplotlib.pyplot as plt
 import time
 from scipy.optimize import root, minimize
@@ -69,3 +67,23 @@ if __name__ == '__main__':
     plt.plot(resids)
     plt.show()
 
+    # problem 2
+    G = np.zeros([2,len(dfPct.columns)])
+    G[0, :18] = 1
+    G[1, :] = 1
+    C = cov_matrix.values
+    R = dfPct.mean(axis=0).values
+    a=1
+    c = np.array([1, 0.1])
+    invC = np.linalg.inv(C)
+    Lambda = np.linalg.inv(np.dot(G, invC.dot(G.T))).dot(G.dot(invC).dot(R) - 2 * a * c)
+    w = 1/2/a*invC.dot((R - G.T.dot(Lambda)))
+    plt.plot(range(len(w)), w)
+    plt.show()
+
+    # problem 3 part a)
+    df1 = pd.read_csv('DataForProblem3.csv',index_col='Date',infer_datetime_format=True)
+    df1 = importData(df1)
+    df1.isnull().sum()
+    print(df1.head(6))
+    print(df1.tail(6))
