@@ -5,6 +5,7 @@ Created on Sun Mar. 14 21:05:52 2022
 
 import cvxpy as opt
 import cvxopt as cvx
+import scipy as si
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -22,8 +23,18 @@ def importData(df):
     print(df.describe())
     return df
 
+def minVarPort(mean_rets, CC):
+    assets = len(mean_rets)
+    args = (mean_rets, CC)
+    consts = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+    bound = (0.0, 1.0)
+    bounds = tuple(bound for asset in range(assets))
+    res = si.optimize.minimize(portSD, assets*[1./assets,], args=args, method='SLSQP', bounds=bounds, constraints=consts)
+    return res
 
-
+def portSD(w, means, CC):
+    port_sd = np.sqrt(np.dot(w.T, np.dot(CC, w))) * np.sqrt(252)
+    return port_sd
 
 if __name__ == '__main__':
 
@@ -99,7 +110,7 @@ if __name__ == '__main__':
 
     # attempt 2
     print('-------------attempt 2---------------')
-    N = 100000
+    N = 1000
     lstwts = np.zeros((N, len(df1.columns)))
     port_rets = np.zeros((N))
     port_risk = np.zeros((N))
@@ -111,13 +122,24 @@ if __name__ == '__main__':
         lstwts[i,:] = wts
 
         port_ret = np.sum(df1.mean() * wts)
-        port_ret = (port_ret + 1)
+        port_ret = (port_ret + 1) ** 252 - 1
 
         port_rets[i] = port_ret
 
-        port_sd = np.sqrt(np.dot(wts.T, np.dot(CC, wts)))
+        port_sd = np.sqrt(np.dot(wts.T, np.dot(CC, wts))) * np.sqrt(252)
         port_risk[i] = port_sd
 
     VaR = lstwts[port_risk.argmin()]
     print(VaR)
     print(port_risk.min())
+    plt.plot(port_risk, port_rets)
+    plt.show()
+
+    print('take 3--------------------')
+    CC = df1.cov()
+    names = df1.columns
+    means = df1.mean()
+    vari = minVarPort(means, CC)
+    resss = pd.DataFrame([round(x,6) for x in vari['x']], index=names).T
+    print(vari)
+    print(resss)
