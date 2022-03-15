@@ -3,14 +3,11 @@ Created on Sun Mar. 14 21:05:52 2022
 @author: Thomas Kuntz MF-796-HW-4
 """
 
-import math
+import cvxpy as opt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import time
-from scipy.optimize import root, minimize
-from scipy import interpolate
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -85,5 +82,41 @@ if __name__ == '__main__':
     df1 = pd.read_csv('DataForProblem3.csv',index_col='Date',infer_datetime_format=True)
     df1 = importData(df1)
     df1.isnull().sum()
-    print(df1.head(6))
-    print(df1.tail(6))
+    #print(df1.head(6))
+    #print(df1.tail(6))
+
+    # attempt 1
+    P = 1000000   # total wealth
+    CC = df1.cov()
+    #print(CC)
+    ww = opt.Variable(len(df1.columns))
+    risk = opt.quad_form(ww, CC)
+    MinPort = opt.Minimize(0.5 * risk)
+    constraint = [opt.sum(ww) == 1, ww >= 0]
+    optimal = opt.Problem(MinPort, constraint).solve()
+    print(optimal)
+
+    # attempt 2
+    print('-------------attempt 2---------------')
+    N = 100000
+    lstwts = np.zeros((N, len(df1.columns)))
+    port_rets = np.zeros((N))
+    port_risk = np.zeros((N))
+
+
+    for i in range(N):
+        wts = np.random.uniform(size = len(df1.columns))
+        wts = wts/np.sum(wts)
+        lstwts[i,:] = wts
+
+        port_ret = np.sum(df1.mean() * wts)
+        port_ret = (port_ret + 1)
+
+        port_rets[i] = port_ret
+
+        port_sd = np.sqrt(np.dot(wts.T, np.dot(CC, wts)))
+        port_risk[i] = port_sd
+
+    VaR = lstwts[port_risk.argmin()]
+    print(VaR)
+    print(port_risk.min())
