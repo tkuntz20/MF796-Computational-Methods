@@ -130,16 +130,19 @@ if __name__ == '__main__':
         port_risk[i] = port_sd
 
     VaR = lstwts[port_risk.argmin()]
-    print(VaR)
-    print(port_risk.min())
-    plt.plot(port_risk, port_rets)
-    plt.show()
+    #print(VaR)
+    #print(port_risk.min())
+    #plt.plot(port_risk, port_rets)
+    #plt.show()
 
-    print('take 3--------------------')
+    print('-------------------take 3--------------------')
     CC = df1.cov()
     names = df1.columns
     means = df1.mean()
     vari = minVarPort(means, CC)
     resss = pd.DataFrame([round(x,6) for x in vari['x']], index=names).T
     print(vari)
+    print()
+    sums = np.sum(vari['x'])
+    print(sums)
     print(resss)
