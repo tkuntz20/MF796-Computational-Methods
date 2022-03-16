@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     # attempt 2
     print('-------------attempt 2---------------')
-    N = 1000
+    N = 100000
     lstwts = np.zeros((N, len(df1.columns)))
     port_rets = np.zeros((N))
     port_risk = np.zeros((N))
@@ -127,13 +127,13 @@ if __name__ == '__main__':
         port_rets[i] = port_ret
 
         port_sd = np.sqrt(np.dot(wts.T, np.dot(CC, wts))) * np.sqrt(252)
-        port_risk[i] = port_sd
+        port_risk[i] = port_sd * 0.5
 
     VaR = lstwts[port_risk.argmin()]
-    #print(VaR)
-    #print(port_risk.min())
-    #plt.plot(port_risk, port_rets)
-    #plt.show()
+    print(VaR)
+    print(port_risk.min())
+    plt.plot(port_risk, port_rets)
+    plt.show()
 
     print('-------------------take 3--------------------')
     CC = df1.cov()
@@ -145,4 +145,5 @@ if __name__ == '__main__':
     print()
     sums = np.sum(vari['x'])
     print(sums)
+    # this is the optimal weighting
     print(resss)
