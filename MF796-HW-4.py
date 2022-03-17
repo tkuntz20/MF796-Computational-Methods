@@ -93,6 +93,8 @@ if __name__ == '__main__':
     # problem 3 part a)
     df1 = pd.read_csv('DataForProblem3.csv',index_col='Date',infer_datetime_format=True)
     df1 = importData(df1)
+    plt.plot(df1)
+    plt.show()
     df1.isnull().sum()
     #print(df1.head(6))
     #print(df1.tail(6))
