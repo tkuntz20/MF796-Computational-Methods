@@ -106,11 +106,12 @@ if __name__ == '__main__':
     MinPort = opt.Minimize(0.5 * risk)
     constraint = [opt.sum(ww) == 1, ww >= 0]
     optimal = opt.Problem(MinPort, constraint).solve()
+    print('--------------try 1--------------')
     print(optimal)
 
     # attempt 2
     print('-------------attempt 2---------------')
-    N = 100000
+    N = 10000
     lstwts = np.zeros((N, len(df1.columns)))
     port_rets = np.zeros((N))
     port_risk = np.zeros((N))
@@ -122,17 +123,17 @@ if __name__ == '__main__':
         lstwts[i,:] = wts
 
         port_ret = np.sum(df1.mean() * wts)
-        port_ret = (port_ret + 1) ** 252 - 1
+        port_ret = (port_ret + 1)
 
         port_rets[i] = port_ret
 
-        port_sd = np.sqrt(np.dot(wts.T, np.dot(CC, wts))) * np.sqrt(252)
-        port_risk[i] = port_sd * 0.5
+        port_sd = np.sqrt(np.dot(wts.T, np.dot(CC, wts)))
+        port_risk[i] = port_sd
 
     VaR = lstwts[port_risk.argmin()]
     print(VaR)
     print(port_risk.min())
-    plt.plot(port_risk, port_rets)
+    plt.scatter(port_risk, port_rets)
     plt.show()
 
     print('-------------------take 3--------------------')
@@ -147,3 +148,53 @@ if __name__ == '__main__':
     print(sums)
     # this is the optimal weighting
     print(resss)
+
+    print('-------------------take 4--------------------')
+    avg = []
+    for i in df1.columns.values:
+        avg.append(df1[i].mean())
+    C = df1.cov()
+    cor = df1.corr()
+    npC = np.matrix(C)
+    Q = cvx.matrix(npC)
+
+    p = cvx.matrix(np.zeros(10), (10,1))
+    IDE = np.eye(10)
+    G = cvx.matrix(IDE)
+    h = cvx.matrix(np.ones(10))
+    means = np.array([avg])
+    temp = np.array([np.ones(10)])
+    A = np.concatenate((temp,means), axis=0)
+    A = cvx.matrix(A)
+    b = cvx.matrix([1.0,0])
+    idex = [df1.columns.values]
+    w = pd.DataFrame(index=idex)
+    stds = []
+    AVG = []
+
+    sec1 = df1['Sec1'].mean() * np.sqrt(252)
+    sec2 = df1['Sec2'].mean() * np.sqrt(252)
+    sec3 = df1['Sec3'].mean() * np.sqrt(252)
+    sec4 = df1['Sec4'].mean() * np.sqrt(252)
+    sec5 = df1['Sec5'].mean() * np.sqrt(252)
+    sec6 = df1['Sec6'].mean() * np.sqrt(252)
+    sec7 = df1['Sec7'].mean() * np.sqrt(252)
+    sec8 = df1['Sec8'].mean() * np.sqrt(252)
+    sec9 = df1['Sec9'].mean() * np.sqrt(252)
+    sec10 = df1['Sec10'].mean() * np.sqrt(252)
+
+    target = [sec1,sec2,sec3,sec4,sec5,sec6,sec7,sec8,sec9,sec10]
+    print(target)
+
+    for j in target:
+        b = cvx.matrix([1.0, j])
+        solve = cvx.solvers.qp(Q,p,G,h,A,b)
+        sol = solve['x']
+        w[str(j)] = pd.Series(solve['x'], index=df1.columns.values)
+        stds.append(np.ndarray.tolist(np.dot(np.dot(sol.T,C),sol)))
+        AVG.append(np.ndarray.tolist(np.dot(sol.T,avg)))
+    stds = np.sqrt(stds)
+    stds = [stds[i][0][0] for i in range(10)]
+    AVG = [AVG[i][0] for i in range(10)]
+    plt.plot(stds, AVG)
+    plt.show()
