@@ -27,7 +27,7 @@ def minVarPort(mean_rets, CC):
     assets = len(mean_rets)
     args = (mean_rets, CC)
     consts = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
-    bound = (0.001, 1.0)
+    bound = (0.0, 1.0)
     bounds = tuple(bound for asset in range(assets))
     res = si.optimize.minimize(portSD, assets*[1./assets,], args=args, method='SLSQP', bounds=bounds, constraints=consts)
     return res
