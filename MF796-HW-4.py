@@ -24,21 +24,14 @@ def importData(df):
     print(df.describe())
     return df
 
-def helper(args):
-    G, c = args
-    func = ({'type': 'eq', 'fun': lambda w: G[0].dot(w) - c[0]},{'type': 'eq', 'fun': lambda w: G[1].dot(w) - c[1]})
-    return func
-
-def helper2(args):
-    R, a, C = args
-    func = lambda w: - R.dot(w) + a * np.transpose(w).dot(C).dot(w)
-    return func
+def helper(w, aa ,temp):
+    return -1*(temp*RR.dot(w) - aa*np.dot(w,CC.dot(w)))
 
 def MinVarPort(means, CC):
     assets = len(means)
     args = (means, CC)
     consts = ({'type': 'ineq', 'fun': lambda x: np.sum(x) - 1})
-    bound = (0.0, 1.0)
+    bound = (0.0, 0.5)
     bounds = tuple(bound for asset in range(assets))
     res = si.optimize.minimize(portSD, assets*[1./assets,], args=args, method='SLSQP', bounds=bounds, constraints=consts)
     return res
@@ -129,30 +122,6 @@ if __name__ == '__main__':
     aa = 0.5
     cc = np.array([1, 0.1])
 
-    # attempt 2
-    print('-------------attempt 2---------------')
-    N = 10000
-    lstwts = np.zeros((N, len(df1.columns)))
-    port_rets = np.zeros((N))
-    port_risk = np.zeros((N))
-
-
-    for i in range(N):
-        wts = np.random.uniform(size = len(df1.columns))
-        wts = wts/np.sum(wts)
-        lstwts[i,:] = wts
-
-        port_ret = np.sum(df1.mean() * wts)
-        port_ret = (port_ret + 1)
-
-        port_rets[i] = port_ret
-
-        port_sd = np.sqrt(np.dot(wts.T, np.dot(CC, wts)))
-        port_risk[i] = port_sd
-
-    VaR = lstwts[port_risk.argmin()]
-    print(VaR)
-    print(port_risk.min())
 
 
     print('-------------------take 3--------------------')
@@ -167,26 +136,41 @@ if __name__ == '__main__':
     print(sums)
     # this is the optimal weighting
     print(resss)
+    cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1},{'type': 'ineq', 'fun': lambda x: x})
+    w0 = np.ones(10)/10
+    bounds = (0,1)
+    opt1 = si.optimize.minimize(helper, w0,args=bounds, constraints=cons)
+    print(opt1)
+    print(sum(opt1.x))
+    plt.title('Minimum Variance Port.')
+    plt.xlabel('Sectors')
+    plt.ylabel('Weights')
+    plt.grid(linestyle='--', linewidth=0.75)
+    plt.scatter(range(len(opt1.x)), opt1.x)
+    plt.show()
+
 
     # part B
-    #print(f'mean returns:   {RR}')
-    GCG = np.linalg.inv(GG.dot(np.linalg.inv(CC)).dot(GG.T))
+    bounds2 = (0,0.5)
+    opt2 = si.optimize.minimize(helper,w0,args=bounds2,constraints=cons)
+    print(opt2)
+    print(sum(opt2.x))
+    plt.title('Optimal Port.')
+    plt.xlabel('Sectors')
+    plt.ylabel('Weights')
+    plt.grid(linestyle='--', linewidth=0.75)
+    plt.scatter(range(len(opt2.x)), opt2.x)
+    plt.show()
 
-    L = GCG.dot(np.transpose(np.transpose(GG.dot(np.linalg.inv(CC)).dot(RR.T)) - 2 * aa * cc))
-
-    ww = (1 / 2) * np.linalg.inv(CC).dot(np.transpose(GG).dot(L)-RR.T)
-
-    print(f'min var:  ,  weights:  {ww}')
-
-    args = (RR.T, aa, CC)
-    argc = (GG, cc)
-    cons = helper(argc)
-    bound = (0.0, 1.0)
-    bounds = tuple(bound for asset in range(len(names)))
-
-    w0 = np.asarray(([0] * 10))
-    optimized = si.optimize.minimize(helper2(args), w0, method='SLSQP', constraints=cons,bounds=bounds)
-    print(optimized.x)
-
-
-
+    # part C
+    bounds3 = (1, 0)
+    cons2 = ({'type': 'ineq', 'fun': lambda x: -(np.sum(x) - 1)}, {'type': 'ineq', 'fun': lambda x: x})
+    opt3 = si.optimize.minimize(helper, w0, args=bounds3, constraints=cons)
+    print(opt3)
+    print(sum(opt3.x))
+    plt.title('Max Return Port.')
+    plt.xlabel('Sectors')
+    plt.ylabel('Weights')
+    plt.grid(linestyle='--', linewidth=0.75)
+    plt.scatter(range(len(opt3.x)), opt3.x)
+    plt.show()
