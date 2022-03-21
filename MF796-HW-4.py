@@ -3,12 +3,13 @@ Created on Sun Mar. 14 21:05:52 2022
 @author: Thomas Kuntz MF-796-HW-4
 """
 
-import cvxpy as opt
-import cvxopt as cvx
+import cvxopt as opt
+from cvxopt import blas, solvers
 import scipy as si
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
@@ -23,10 +24,20 @@ def importData(df):
     print(df.describe())
     return df
 
-def minVarPort(mean_rets, CC):
-    assets = len(mean_rets)
-    args = (mean_rets, CC)
-    consts = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+def helper(args):
+    G, c = args
+    func = ({'type': 'eq', 'fun': lambda w: G[0].dot(w) - c[0]},{'type': 'eq', 'fun': lambda w: G[1].dot(w) - c[1]})
+    return func
+
+def helper2(args):
+    R, a, C = args
+    func = lambda w: - R.dot(w) + a * np.transpose(w).dot(C).dot(w)
+    return func
+
+def MinVarPort(means, CC):
+    assets = len(means)
+    args = (means, CC)
+    consts = ({'type': 'ineq', 'fun': lambda x: np.sum(x) - 1})
     bound = (0.0, 1.0)
     bounds = tuple(bound for asset in range(assets))
     res = si.optimize.minimize(portSD, assets*[1./assets,], args=args, method='SLSQP', bounds=bounds, constraints=consts)
@@ -35,6 +46,7 @@ def minVarPort(mean_rets, CC):
 def portSD(w, means, CC):
     port_sd = np.sqrt(np.dot(w.T, np.dot(CC, w)))
     return port_sd
+
 
 if __name__ == '__main__':
 
@@ -46,7 +58,7 @@ if __name__ == '__main__':
     # part b)
     dfPct = data.pct_change()
     dfPct = dfPct.dropna()
-    print(dfPct.head(10))
+    #print(dfPct.head(10))
 
     # part c)
     plt.figure(figsize=(17, 11))
@@ -55,6 +67,10 @@ if __name__ == '__main__':
     cov_matrix = dfPct.cov()
     eigenValues, eigenVectors = np.linalg.eig(cov_matrix)
 
+    plt.title('Line Plot of Eigenvalues')
+    plt.xlabel('Number')
+    plt.ylabel('Value')
+    plt.grid(linestyle='--', linewidth=0.75)
     plt.plot(eigenValues)
     plt.show()
 
@@ -73,51 +89,45 @@ if __name__ == '__main__':
     # part e)
     rets = eigenVectors[:, :cum2]
     resids = dfPct - np.dot(dfPct.values.dot(rets), rets.T)
+    plt.title('Line Plot of Residuals')
+    plt.xlabel('time')
+    plt.ylabel('Value')
+    #plt.grid(linestyle='--', linewidth=0.75)
     plt.plot(resids)
     plt.show()
 
     # problem 2
-    G = np.zeros([2,len(dfPct.columns)])
-    G[0, :18] = 1
+    G = np.zeros([2, len(dfPct.columns)])
     G[1, :] = 1
+    G[0, :17] = 1
     C = cov_matrix.values
     R = dfPct.mean(axis=0).values
-    a=1
+    a = 1
     c = np.array([1, 0.1])
     invC = np.linalg.inv(C)
-    Lambda = np.linalg.inv(np.dot(G, invC.dot(G.T))).dot(G.dot(invC).dot(R) - 2 * a * c)
+    Lambda = np.linalg.inv(np.dot(G, invC.dot(G.T))).dot(G.dot(invC).dot(R) - (2 * a * c))
     w = 1/2/a*invC.dot((R - G.T.dot(Lambda)))
+    plt.title('Line Plot Weights')
+    plt.xlabel('time')
+    plt.ylabel('Value')
+    plt.grid(linestyle='--', linewidth=0.75)
     plt.plot(range(len(w)), w)
     plt.show()
 
     # problem 3 part a)
     df1 = pd.read_csv('DataForProblem3.csv',index_col='Date',infer_datetime_format=True)
     df1 = importData(df1)
-    plt.plot(df1)
-    plt.show()
     df1.isnull().sum()
-    #print(df1.head(6))
-    #print(df1.tail(6))
-
-    # attempt 1
-    P = 1000000   # total wealth
+    P = 1000000  # total wealth
     GG = np.zeros([2, len(df1.columns)])
-    GG[0, :9] = 1
     GG[1, :] = 1
-    CC = df1.cov()
-    #print(CC)
+    GG[0, :9] = 1
+    CC = df1.cov().values
+    COR = df1.corr()
+    Cinv = np.linalg.inv(CC)
     RR = df1.mean(axis=0).values
     aa = 0.5
-    cc = 1
-    invCC = np.linalg.inv(CC)
-    LL = np.linalg.inv(np.dot(GG, invCC.dot(GG.T))).dot(GG.dot(invCC).dot(RR) - 2 * aa * cc)
-    ww = 1 / 2 / aa * invCC.dot((RR - GG.T.dot(LL)))
-    plt.plot(range(len(ww)), ww)
-    plt.show()
-    print(f'The weights: \n{ww} \n and the sum of the weights: {np.sum(ww)}')
-
-
-
+    cc = np.array([1, 0.1])
 
     # attempt 2
     print('-------------attempt 2---------------')
@@ -143,14 +153,13 @@ if __name__ == '__main__':
     VaR = lstwts[port_risk.argmin()]
     print(VaR)
     print(port_risk.min())
-    plt.scatter(port_risk, port_rets)
-    plt.show()
+
 
     print('-------------------take 3--------------------')
     CC = df1.cov()
     names = df1.columns
     means = df1.mean(axis=0).values
-    vari = minVarPort(means, CC)
+    vari = MinVarPort(means, CC)
     resss = pd.DataFrame([round(x,6) for x in vari['x']], index=names).T
     print(vari)
     print()
@@ -158,4 +167,26 @@ if __name__ == '__main__':
     print(sums)
     # this is the optimal weighting
     print(resss)
+
+    # part B
+    #print(f'mean returns:   {RR}')
+    GCG = np.linalg.inv(GG.dot(np.linalg.inv(CC)).dot(GG.T))
+
+    L = GCG.dot(np.transpose(np.transpose(GG.dot(np.linalg.inv(CC)).dot(RR.T)) - 2 * aa * cc))
+
+    ww = (1 / 2) * np.linalg.inv(CC).dot(np.transpose(GG).dot(L)-RR.T)
+
+    print(f'min var:  ,  weights:  {ww}')
+
+    args = (RR.T, aa, CC)
+    argc = (GG, cc)
+    cons = helper(argc)
+    bound = (0.0, 1.0)
+    bounds = tuple(bound for asset in range(len(names)))
+
+    w0 = np.asarray(([0] * 10))
+    optimized = si.optimize.minimize(helper2(args), w0, method='SLSQP', constraints=cons,bounds=bounds)
+    print(optimized.x)
+
+
 
