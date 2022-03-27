@@ -9,7 +9,7 @@ def descretization(S, K1, K2, min, max, r, T, sigma, N1, N2):
 
     return
 
-def matrix(S, K1, K2, min, max, r, T, sigma, N1, N2):
+def matrix(S, K1, K2, min, max, r, T, sigma, N1, N2, type, option='european'):
     ss = np.arange(min, max+((max-min)/N2),((max-min)/N2))
     aa = 1 - (sigma * ss) ** 2 * (T/N1) / (((max-min)/N2) ** 2) - r * (T/N1)
     ll = ((sigma * ss) ** 2) / 2 * ((T/N1) / (((max-min)/N2) ** 2)) - (r * ss * (T/N1)) / (2 * ((max-min)/N2))
@@ -24,7 +24,7 @@ def matrix(S, K1, K2, min, max, r, T, sigma, N1, N2):
 
     return AA, ss, uu
 
-def descreteEulerCall(AA, ss, uu, S, K1, K2, min, max, r, T, sigma, N1, N2):
+def descreteEulerCall(AA, ss, uu, S, K1, K2, min, max, r, T, sigma, N1, N2, type, option='european'):
     c = (ss - K1)[1: N2]
     c[c<0]=0
     cVector = c
@@ -36,7 +36,7 @@ def descreteEulerCall(AA, ss, uu, S, K1, K2, min, max, r, T, sigma, N1, N2):
             cVector = [x if x > y else y for x, y in zip(cVector, c)]
     return np.interp(S, ss[1:N1], cVector)
 
-def descreteEulerSpread(AA, ss, uu, S, K1, K2, min, max, r, T, sigma, N1, N2):
+def descreteEulerSpread(AA, ss, uu, S, K1, K2, min, max, r, T, sigma, N1, N2, type, option='european'):
     short = (ss - K1)[1:N2]
     long = (ss - K2)[1:N2]
     short[short < 0] = 0
@@ -74,3 +74,4 @@ if __name__ == '__main__':
     Nt_list = [1000, 5000, 10000]
     call_price_BS = euroCall(s0, k1, r, sigma, t)
     print(call_price_BS)
+
