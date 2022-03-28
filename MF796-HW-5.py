@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.optimize import root
-import math
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 from numpy.linalg import eig
@@ -38,12 +37,12 @@ def matrix(S, K1, K2, min, max, r, T, sigma, N1, N2, type, option):
         short[short < 0] = 0
         long[long < 0] = 0
         cVector = long - short
-        c = cVector
+        c2 = cVector
         for i in range(N1):
             cVector = AA.dot(cVector)
             cVector[-1] = cVector[-1] + uu[N2 -1] * (max - (K1 - K2) * np.exp(-r * i * ht))
             if option == 'American':
-                cVector = [x if x > y else y for x, y in zip(cVector, c)]
+                cVector = [x if x > y else y for x, y in zip(cVector, c2)]
     return np.interp(S, ss[1:N2], cVector), AA
 
 
@@ -52,14 +51,14 @@ if __name__ == '__main__':
     S = 440
     K1 = 445
     K2 = 450
-    T = 177/365
+    T = 128/252
     r = 0.05
     min = 0
-    max = 500
-    Nt = 1000
-    Ns = 250
-    maxLst = [500, 1000, 1500]
-    NtLst = [1000, 5000, 10000]
+    max = 1000
+    Nt = 2000
+    Ns = 300
+    maxLst = [300, 1501, 100]
+    NtLst = [252, 356, 1440, 2000]
 
     # finding volatility( call values pulled from Bloomberg)
     callK1 = 29.84
@@ -68,7 +67,8 @@ if __name__ == '__main__':
     vol2 = root(lambda x: euroCall(S, K2, T, r, x) - callK2, 0.1).x
 
     sigma = (vol1 + vol2) / 2
-    print(f'sigma = {sigma}')
+    sigma = float(sigma)
+    print(f'sigma is {sigma}')
 
     call = euroCall(S, K1, T, r, sigma)
     print(call)
@@ -78,10 +78,9 @@ if __name__ == '__main__':
 
     for i in range(len(maxLst)):
         callPDE += [matrix(S, K1, K2, min, maxLst[i], r, T, sigma, NtLst[i], Ns, 'call', 'European')[0]]
-    print(f'the descrete:  {callPDE}')
-
+    print(f'The descrete value is:  {callPDE}')
     error = abs((callPDE - call) / call)
-    print(f'error is:  {error}')
+    print(f'The error is:  {error}')
 
     AA = matrix(S, K1, K2, min, max, r, T, sigma, Nt, Ns, 'call', 'European')[1]
     eigenValue = eig(AA)[0]
@@ -89,11 +88,7 @@ if __name__ == '__main__':
     firstEig = absEig[0]
 
     plt.plot(eigenValue)
-    plt.title('Raw Eigenvalues')
-    plt.grid(linestyle='--', linewidth=0.75)
-    plt.show()
-
-    plt.title('Absolute Values of Eigenvalues')
+    plt.title('Absolute Eigenvalues and Raw Eigenvalues')
     plt.grid(linestyle='--', linewidth=0.75)
     plt.plot(absEig)
     plt.show()
