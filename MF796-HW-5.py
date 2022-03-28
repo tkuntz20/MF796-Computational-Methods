@@ -12,6 +12,7 @@ def euroCall(S, K, T, r, sigma):
 def matrix(S, K1, K2, min, max, r, T, sigma, N1, N2, type, option):
     hs = (max-min)/N2
     ht = T / N1
+    #print(hs, ht)
     ss = np.arange(min, max + hs, hs)
     aa = 1 - (sigma * ss) ** 2 * ht / (hs ** 2) - r * ht
     ll = ((sigma * ss) ** 2) / 2 * (ht / (hs ** 2)) - (r * ss * ht) / (2 * hs)
