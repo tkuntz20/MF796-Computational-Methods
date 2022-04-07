@@ -1,75 +1,74 @@
-import math
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy import interpolate
-from scipy.stats import norm
+
 import math
 import numpy as np
 import cmath
-import scipy.stats as si
 import matplotlib.pyplot as plt
-from matplotlib import cm
 import time
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.optimize import root
 from scipy import interpolate
 
-def euroCall(S,K,T,r,type):
-    if type == 'p':
-        payoff = np.maximum(K-S[:,-1], 0)
-    else:
-        payoff = np.maximum(S[:,-1]-K, 0)
-    price = np.exp(-r * T) * np.mean(payoff)
-    return price
+class SimulationInHeston():
 
-def upAndOut(S,K1,K2,T,r,type):
-    if type == 'p':
+    def __init__(self, S, T, r, type):
+        self.S = S
+        self.T = T
+        self.r = r
+        self.type = type
+
+    def euroCall(self, S, K):
+        if type == 'p':
+            payoff = np.maximum(K-S[:,-1], 0)
+        else:
+            payoff = np.maximum(S[:,-1]-K, 0)
+        price = np.exp(-self.r * self.T) * np.mean(payoff)
+        return price
+
+    def upAndOut(self, S, K1, K2):
+        if type == 'p':
+            max = np.max(S, axis=1)
+            dummy = np.where(max < K2, 1, 0)
+            payoff = np.maximum(K1 - S[:, -1], 0) * dummy
+        else:
+            max = np.max(S, axis=1)
+            dummy = np.where(max < K2, 1, 0)
+            payoff = np.maximum(S[:, -1] - K1, 0) * dummy
+        price = np.exp(-self.r * self.T) * np.mean(payoff)
+        return price
+
+    def upAndOutVr(self, S, K1, K2, euro):
+        euPayoff = np.maximum(S[:, -1] - K1, 0)
         max = np.max(S, axis=1)
         dummy = np.where(max < K2, 1, 0)
-        payoff = np.maximum(K1 - S[:, -1], 0) * dummy
-    else:
-        max = np.max(S, axis=1)
-        dummy = np.where(max < K2, 1, 0)
-        payoff = np.maximum(S[:, -1] - K1, 0) * dummy
-    price = np.exp(-r * T) * np.mean(payoff)
-    return price
+        upOutPayoff = np.maximum(S[:, -1] - K1, 0) * dummy
+        CC = np.cov(euPayoff, upOutPayoff)
+        cc = -CC[0][1] / CC[0][0]
+        payoff = np.mean(upOutPayoff) + cc * (euPayoff - euro)
+        price = np.exp(-self.r * self.T) * np.mean(payoff)
+        return price
 
-def upAndOutVr(S,K1,K2,T,r,euro):
-    euPayoff = np.maximum(S[:, -1] - K1, 0)
-    max = np.max(S, axis=1)
-    dummy = np.where(max < K2, 1, 0)
-    upOutPayoff = np.maximum(S[:, -1] - K1, 0) * dummy
-    CC = np.cov(euPayoff,upOutPayoff)
-    cc = -CC[0][1] / CC[0][0]
-    payoff = np.mean(upOutPayoff) + cc * (euPayoff - euro)
-    price = np.exp(-r * T) * np.mean(payoff)
-    return price
+    def simulatedHeston(self, paramsH, paramsE, N, M, seed=None):
+        kappa, theta, sigma, rho, nu = paramsH
+        S, T, r, q = paramsE
+        dt = T/M
+        if seed is not None:
+            np.random.seed(seed)
 
-def simulatedHeston(paramsH, paramsE, N, M, seed=None):
-    kappa, theta, sigma, rho, nu = paramsH
-    S, T, r, q = paramsE
-    dt = T/M
-    if seed is not None:
-        np.random.seed(seed)
+        mu = np.array([0, 0])
+        CC = np.array([[dt, dt * rho], [dt * rho, dt]])
+        dW = np.random.multivariate_normal(mu, CC, M * N)
+        dW1 = dW[:, 0].reshape(N, M)
+        dW2 = dW[:, 1].reshape(N, M)
 
-    mu = np.array([0, 0])
-    CC = np.array([[dt, dt * rho], [dt * rho, dt]])
-    dW = np.random.multivariate_normal(mu, CC, M * N)
-    dW1 = dW[:, 0].reshape(N, M)
-    dW2 = dW[:, 1].reshape(N, M)
+        ss = np.zeros([N, M])
+        vv = np.zeros([N, M])
+        ss[:, 0] = S
+        vv[:, 0] = nu
 
-    ss = np.zeros([N, M])
-    vv = np.zeros([N, M])
-    ss[:, 0] = S
-    vv[:, 0] = nu
-
-    for i in range(1,M):
-        dv_t = kappa * (theta - np.maximum(vv[:, i-1], 0)) * dt + sigma * np.maximum(vv[:, i-1], 0) ** 0.5 * dW2[:,i-1]
-        vv[:,i] = vv[:, i-1] + dv_t
-        dS_t = (r-q) * ss[:, i-1] * dt + np.maximum(vv[:, i-1], 0) ** 0.5 * ss[:, i-1] * dW1[:, i-1]
-        ss[:, i] = ss[:, i-1] + dS_t
-    return ss
-
+        for i in range(1,M):
+            dv_t = kappa * (theta - np.maximum(vv[:, i-1], 0)) * dt + sigma * np.maximum(vv[:, i-1], 0) ** 0.5 * dW2[:,i-1]
+            vv[:,i] = vv[:, i-1] + dv_t
+            dS_t = (r-q) * ss[:, i-1] * dt + np.maximum(vv[:, i-1], 0) ** 0.5 * ss[:, i-1] * dW1[:, i-1]
+            ss[:, i] = ss[:, i-1] + dS_t
+        return ss
 
 
 class FastFourierTransforms():
@@ -105,12 +104,8 @@ class FastFourierTransforms():
 
         i = complex(0, 1)
         Lambda = cmath.sqrt(sigma ** 2 * (u ** 2 + i * u) + (kappa - i * rho * sigma * u) ** 2)
-        omega = np.exp(i * u * np.log(S) + i * u * (r - q) * T + kappa * theta * T * (
-                    kappa - i * rho * sigma * u) / sigma ** 2) / ((cmath.cosh(Lambda * T / 2) + (
-                    kappa - i * rho * sigma * u) / Lambda * cmath.sinh(Lambda * T / 2)) ** (
-                                                                              2 * kappa * theta / sigma ** 2))
-        phi = omega * np.exp(
-            -(u ** 2 + i * u) * nu / (Lambda / cmath.tanh(Lambda * T / 2) + kappa - i * rho * sigma * u))
+        omega = np.exp(i * u * np.log(S) + i * u * (r - q) * T + kappa * theta * T * (kappa - i * rho * sigma * u) / sigma ** 2) / ((cmath.cosh(Lambda * T / 2) + (kappa - i * rho * sigma * u) / Lambda * cmath.sinh(Lambda * T / 2)) ** (2 * kappa * theta / sigma ** 2))
+        phi = omega * np.exp(-(u ** 2 + i * u) * nu / (Lambda / cmath.tanh(Lambda * T / 2) + kappa - i * rho * sigma * u))
         return phi
 
     def heston(self, alpha, N, B, K):
@@ -181,8 +176,9 @@ if __name__ == '__main__':
     N = 100000
 
     # part c
-    simulated = simulatedHeston(paramsH, paramsE, N, M)
-    euroC = euroCall(simulated, K, T, r, type='c')
+    sih = SimulationInHeston(S, T, r, type='c')
+    simulated = sih.simulatedHeston(paramsH, paramsE, N, M)
+    euroC = sih.euroCall(simulated, K)
     FFT = FastFourierTransforms(S, K, T, r, q, sigma, nu, kappa, rho, theta)
     euroFFT = FFT.heston(1.5, N=10, B=K, K=K)
     print(f' Euro Call value via Simulation =  {euroC}')
@@ -191,7 +187,7 @@ if __name__ == '__main__':
     # part d
     K1 = 285
     K2 = 315
-    uao = upAndOut(simulated, K1, K2, T, r, type='c')
+    uao = sih.upAndOut(simulated, K1, K2, )
     print(f' Up and Out call values =   {uao}')
 
     Ns = np.logspace(1, 4.9, 400)
@@ -199,7 +195,7 @@ if __name__ == '__main__':
     for sample_N in Ns:
         sample_index = np.random.choice(N, int(sample_N), replace=False)
         sample_path = simulated[sample_index, :]
-        price = upAndOut(sample_path, K1, K2, T, r, type='c')
+        price = sih.upAndOut(sample_path, K1, K2)
         UpAndOut.append(price)
 
     Error = [abs(p - uao) for p in UpAndOut]
@@ -214,15 +210,15 @@ if __name__ == '__main__':
     plt.show()
 
     # part e
-    euro = euroCall(simulated, K, T, r, type='c')
-    Ns = np.logspace(1,4.9,50)
+    euro = sih.euroCall(simulated, K)
+    Ns = np.logspace(1,4.9,100)
     UpAndOut = []
     UpAndOut_cv = []
     for sample_N in Ns:
         sample_index = np.random.choice(N, int(sample_N), replace=False)
         sample_path = simulated[sample_index, :]
-        price = upAndOut(sample_path, K1, K2, T, r, type='c')
-        price_cv = upAndOutVr(sample_path, K1, K2, T, r, euro)
+        price = sih.upAndOut(sample_path, K1, K2)
+        price_cv = sih.upAndOutVr(sample_path, K1, K2, euro)
         UpAndOut.append(price)
         UpAndOut_cv.append(price_cv)
 
