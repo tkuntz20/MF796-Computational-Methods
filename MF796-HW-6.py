@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
     # part b
     M = 252
-    N = 100000
+    N = 1000000
 
     # part c
     sih = SimulationInHeston(S, T, r, type='c')
@@ -203,10 +203,11 @@ if __name__ == '__main__':
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_xscale("log")
-    ax.set_title('Option Price vs Number of simulated paths')
-    ax.set_ylabel('Option Price')
-    ax.set_xlabel('Number of simulated paths (N)')
-    ax.plot(Ns, UpAndOut, "-")
+    ax.set_title('Option Value vs. # paths')
+    ax.set_ylabel('Option Value')
+    ax.set_xlabel('# Paths (N)')
+    ax.plot(Ns, UpAndOut, color='purple')
+    plt.grid(linestyle='--', linewidth=1)
     plt.show()
 
     # part e
@@ -228,11 +229,13 @@ if __name__ == '__main__':
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_xscale("log")
-    ax.set_title('Error vs Number of simulated paths')
+    ax.set_title('Error vs. # Paths')
     ax.set_ylabel('Error')
-    ax.set_xlabel('Number of simulated paths (N)')
-    ax.plot(Ns, R_Error, Ns, R_Error_vc)
-    ax.legend(['Simulation Error without vc', 'Simulation Error with vc'])
+    ax.set_xlabel('# Paths (N)')
+    ax.plot(Ns, R_Error, color='b')
+    ax.plot(Ns, R_Error_vc, color='y')
+    ax.legend(['Error w/o vc', 'Error w/ vc'])
+    plt.grid(linestyle='--', linewidth=1)
     plt.show()
 
 
