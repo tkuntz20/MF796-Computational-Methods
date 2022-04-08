@@ -1,3 +1,8 @@
+"""
+Created on WED, April 7 21:05:52 2022
+
+@author: Thomas Kuntz
+"""
 
 import math
 import numpy as np
@@ -237,6 +242,3 @@ if __name__ == '__main__':
     ax.legend(['Error w/o vc', 'Error w/ vc'])
     plt.grid(linestyle='--', linewidth=1)
     plt.show()
-
-
-
