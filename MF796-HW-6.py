@@ -168,7 +168,7 @@ if __name__ == '__main__':
     sigma = 1.18
     rho = -0.77
     nu = 0.034
-    S = 440
+    S = 282
     K = 282
     T = 1
     q = 0.0177
@@ -177,8 +177,8 @@ if __name__ == '__main__':
     paramsE = [S, T, r, q]
 
     # part b
-    M = 282
-    N = 1000000
+    M = 252
+    N = 100000
 
     # part c
     sih = SimulationInHeston(S, T, r, type='c')
