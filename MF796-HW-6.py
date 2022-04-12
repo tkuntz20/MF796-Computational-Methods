@@ -97,7 +97,6 @@ class FastFourierTransforms():
         return delta
 
     def CharaceristicHeston(self, u):
-
         sigma = self.sigma
         nu = self.nu
         kappa = self.kappa
@@ -106,7 +105,6 @@ class FastFourierTransforms():
         S = self.S
         r = self.r
         T = self.T
-
         i = complex(0, 1)
         Lambda = cmath.sqrt(sigma ** 2 * (u ** 2 + i * u) + (kappa - i * rho * sigma * u) ** 2)
         omega = np.exp(i * u * np.log(S) + i * u * (r - q) * T + kappa * theta * T * (kappa - i * rho * sigma * u) / sigma ** 2) / ((cmath.cosh(Lambda * T / 2) + (kappa - i * rho * sigma * u) / Lambda * cmath.sinh(Lambda * T / 2)) ** (2 * kappa * theta / sigma ** 2))
@@ -114,8 +112,6 @@ class FastFourierTransforms():
         return phi
 
     def heston(self, alpha, N, B, K):
-
-        t = time.time()
         tau = B / (2 ** N)
         Lambda = (2 * math.pi / (2 ** N)) / tau
         dx = (np.arange(1, (2 ** N) + 1, dtype=complex) - 1) * tau
@@ -143,9 +139,6 @@ class FastFourierTransforms():
         spline = interpolate.splrep(Kfft, np.real(ffT))
         value = np.exp(-self.r * self.T) * interpolate.splev(K, spline).real
 
-        tt = time.time()
-        compTime = tt - t
-
         return value
 
     def strikeCalibration(self, size, strikesLst, K):
@@ -165,7 +158,7 @@ if __name__ == '__main__':
 
     kappa = 3.52
     theta = 0.052
-    sigma = 1.18
+    sigma = 1.9
     rho = -0.77
     nu = 0.034
     S = 282
@@ -195,7 +188,7 @@ if __name__ == '__main__':
     uao = sih.upAndOut(simulated, K1, K2, )
     print(f' Up and Out call values =   {uao}')
 
-    Ns = np.logspace(1, 4.9, 400)
+    Ns = np.logspace(1, 5, 400)
     UpAndOut = []
     for sample_N in Ns:
         sample_index = np.random.choice(N, int(sample_N), replace=False)
@@ -217,7 +210,7 @@ if __name__ == '__main__':
 
     # part e
     euro = sih.euroCall(simulated, K)
-    Ns = np.logspace(1,4.9,100)
+    Ns = np.logspace(1,5,100)
     UpAndOut = []
     UpAndOut_cv = []
     for sample_N in Ns:
